@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>WB Media — Social Pilot CSV Generator</title>
+<title>WB Media — Social Pilot Scheduler</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -14,7 +14,6 @@
 }
 body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--black);min-height:100vh;font-size:14px}
 
-/* HEADER */
 header{background:var(--black);border-bottom:3px solid var(--red);display:flex;align-items:center;justify-content:space-between;padding:0 32px}
 .logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;color:var(--white);letter-spacing:.04em;padding:16px 0}
 .logo span{color:var(--red)}
@@ -27,20 +26,17 @@ nav button.active{color:var(--white);border-bottom-color:var(--red)}
 .sync-pill.err{background:rgba(198,40,40,.2);color:#ef9a9a}
 .sync-pill.busy{background:rgba(255,255,255,.08);color:var(--g400)}
 
-/* LAYOUT */
 .view{display:none;max-width:1140px;margin:0 auto;padding:28px 24px 60px}
 .view.active{display:block}
 
-/* STEP CARDS */
 .step{margin-bottom:18px;background:#fff;border:1px solid var(--border);border-radius:4px;overflow:hidden}
 .step-header{background:var(--black);padding:11px 20px;display:flex;align-items:center;gap:14px}
 .step-num{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--red);background:rgba(204,21,21,.12);border:1px solid rgba(204,21,21,.3);border-radius:2px;padding:2px 8px;text-transform:uppercase}
 .step-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.06em;color:var(--white);text-transform:uppercase}
 .step-body{padding:20px}
 
-/* FORMS */
 label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--g600);margin-bottom:5px}
-input[type=text],input[type=time],input[type=url],select{width:100%;border:1px solid var(--border);border-radius:3px;padding:9px 12px;font-size:13px;font-family:'Barlow',sans-serif;color:var(--black);background:var(--white);outline:none;transition:.15s}
+input[type=text],input[type=time],input[type=url],input[type=password],select{width:100%;border:1px solid var(--border);border-radius:3px;padding:9px 12px;font-size:13px;font-family:'Barlow',sans-serif;color:var(--black);background:var(--white);outline:none;transition:.15s}
 input:focus,select:focus{border-color:var(--red)}
 .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -48,7 +44,6 @@ input:focus,select:focus{border-color:var(--red)}
 .hint{font-size:11px;color:var(--g400);margin-top:4px;line-height:1.5}
 code{font-family:monospace;background:var(--g100);padding:1px 5px;border-radius:2px;font-size:11px}
 
-/* UPLOAD */
 .upload-zone{border:2px dashed var(--border);border-radius:4px;padding:32px 24px;text-align:center;cursor:pointer;transition:.2s;position:relative}
 .upload-zone:hover,.upload-zone.dragover{border-color:var(--red);background:#fff5f5}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
@@ -56,7 +51,6 @@ code{font-family:monospace;background:var(--g100);padding:1px 5px;border-radius:
 .u-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
 .u-sub{font-size:12px;color:var(--g400)}
 
-/* STATUS */
 .status-bar{display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:3px;font-size:13px;font-weight:500;margin-top:12px}
 .status-bar.loading{background:#FFF8E1;color:#7a5900;display:flex}
 .status-bar.success{background:var(--gl);color:var(--green);display:flex}
@@ -64,7 +58,6 @@ code{font-family:monospace;background:var(--g100);padding:1px 5px;border-radius:
 .spinner{width:15px;height:15px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
 
-/* BUTTONS */
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;transition:.15s}
 .btn-primary{background:var(--red);color:#fff}.btn-primary:hover{background:var(--red-dark)}
 .btn-primary:disabled{background:var(--g200);color:var(--g400);cursor:not-allowed}
@@ -72,7 +65,6 @@ code{font-family:monospace;background:var(--g100);padding:1px 5px;border-radius:
 .btn-danger{background:transparent;color:#c62828;border:1px solid #FFCDD2}.btn-danger:hover{background:#FFEBEE}
 .btn-sm{padding:5px 12px;font-size:12px}.btn-xs{padding:3px 9px;font-size:11px}
 
-/* TABLE */
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead tr{background:var(--g100);border-bottom:2px solid var(--border)}
@@ -82,19 +74,15 @@ tbody tr:hover{background:#fafaf9}
 tbody tr:last-child{border-bottom:none}
 td{padding:7px 12px;vertical-align:middle}
 
-/* BADGES */
 .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap}
 .b-grey{background:var(--g100);color:var(--g600);border:1px solid var(--border)}
 .b-green{background:var(--gl);color:var(--green);border:1px solid var(--gb)}
 .b-blue{background:#E3F2FD;color:#1565c0;border:1px solid #90CAF9}
 .b-orange{background:#FFF3E0;color:#e65100;border:1px solid #FFCC80}
-.b-red{background:rgba(204,21,21,.08);color:var(--red);border:1px solid rgba(204,21,21,.2)}
 
-/* INLINE TABLE INPUTS */
 .tbl-input{width:100%;border:1px solid var(--border);border-radius:3px;padding:5px 8px;font-size:12px;font-family:'Barlow',sans-serif;outline:none;transition:.15s;background:var(--white)}
 .tbl-input:focus{border-color:var(--red)}
 
-/* CLIENT GRID */
 .client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .client-card{background:#fff;border:1px solid var(--border);border-radius:4px;padding:16px;transition:.15s}
 .client-card:hover{border-color:var(--g400);box-shadow:0 2px 8px rgba(0,0,0,.06)}
@@ -104,25 +92,23 @@ td{padding:7px 12px;vertical-align:middle}
 .add-card{border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:130px;cursor:pointer;background:none;border-radius:4px;transition:.15s;color:var(--g400);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;width:100%}
 .add-card:hover{border-color:var(--red);color:var(--red)}
 
-/* MODAL */
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
-.modal{background:#fff;border-radius:6px;width:100%;max-width:600px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
+.modal{background:#fff;border-radius:6px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
 .modal-hdr{background:var(--black);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;border-radius:6px 6px 0 0}
 .modal-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:17px;letter-spacing:.06em;text-transform:uppercase;color:var(--white)}
 .modal-x{background:none;border:none;color:var(--g400);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}.modal-x:hover{color:#fff}
 .modal-body{padding:20px}
 .modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
 
-/* ACCOUNT ROWS IN MODAL */
 .ar{display:grid;grid-template-columns:140px 1fr 32px;gap:8px;align-items:center;margin-bottom:8px}
 .ar-hdr{display:grid;grid-template-columns:140px 1fr 32px;gap:8px;margin-bottom:6px}
 .ar-hdr span{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g600)}
 
-/* MISC */
 .instr{background:var(--g100);border-left:3px solid var(--red);padding:10px 14px;border-radius:0 3px 3px 0;margin-bottom:16px}
 .instr p{font-size:12px;color:var(--g600);line-height:1.6}
 .instr strong{color:var(--black)}
+
 .action-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px}
 .post-count{font-size:12px;color:var(--g400)}
 .post-count strong{color:var(--black)}
@@ -135,20 +121,26 @@ td{padding:7px 12px;vertical-align:middle}
 .empty{text-align:center;padding:44px 24px;color:var(--g400)}
 .empty .ei{font-size:32px;margin-bottom:10px}
 
-/* SETTINGS PANEL */
-.settings-box{background:#fff;border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:20px}
+.settings-box{background:#fff;border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:18px}
 .settings-box h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
 .settings-box p{font-size:12px;color:var(--g600);margin-bottom:16px;line-height:1.6}
-.setup-steps{counter-reset:step;margin:16px 0}
+.setup-steps{margin:16px 0}
 .setup-step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
-.step-dot{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--red);background:rgba(204,21,21,.1);border:1px solid rgba(204,21,21,.2);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:1px}
-.step-text{font-size:12px;color:var(--g600);line-height:1.6}
-.step-text strong{color:var(--black)}
-.url-test{display:flex;gap:8px;align-items:flex-end;margin-top:14px}
-.url-test>div:first-child{flex:1}
+.s-dot{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--red);background:rgba(204,21,21,.1);border:1px solid rgba(204,21,21,.2);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:1px}
+.s-text{font-size:12px;color:var(--g600);line-height:1.6}
+.s-text strong{color:var(--black)}
+.url-row{display:flex;gap:8px;align-items:flex-end;margin-top:14px}
+.url-row>div:first-child{flex:1}
 .test-result{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:3px;display:none}
 .test-result.ok{background:var(--gl);color:var(--green);display:block}
 .test-result.fail{background:#FFEBEE;color:#c62828;display:block}
+
+/* MULTI SELECT PLATFORMS */
+.platform-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.plat-check{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;background:var(--g100);border:1px solid var(--border);border-radius:3px;padding:5px 10px;transition:.15s;user-select:none}
+.plat-check:hover{border-color:var(--g400)}
+.plat-check.selected{background:rgba(204,21,21,.08);border-color:rgba(204,21,21,.3);color:var(--red);font-weight:600}
+.plat-check input{display:none}
 </style>
 </head>
 <body>
@@ -169,7 +161,7 @@ td{padding:7px 12px;vertical-align:middle}
 <div class="view active" id="view-scheduler">
 
   <div class="step">
-    <div class="step-header"><span class="step-num">Step 01</span><span class="step-title">Select Client</span></div>
+    <div class="step-header"><span class="step-num">Step 01</span><span class="step-title">Select Client &amp; Platforms</span></div>
     <div class="step-body">
       <div class="g4">
         <div>
@@ -177,17 +169,17 @@ td{padding:7px 12px;vertical-align:middle}
           <select id="sel-client" onchange="onClientSelect()"><option value="">— Select client —</option></select>
         </div>
         <div>
-          <label>Platform / Account</label>
-          <select id="sel-platform" onchange="updateSelSummary()"><option value="">— Select platform —</option></select>
-        </div>
-        <div>
-          <label>Default Post Time</label>
+          <label>Post Time (default)</label>
           <input type="time" id="defaultTime" value="09:00" style="width:auto" onchange="onTimeChange()"/>
         </div>
-        <div style="display:flex;align-items:flex-end">
-          <div id="sel-summary" style="font-size:12px;color:var(--g400);line-height:1.8;padding-bottom:2px"></div>
+        <div style="grid-column:span 2">
+          <label>Platforms to post to</label>
+          <div class="platform-checks" id="platformChecks">
+            <div class="empty" style="padding:8px 0;font-size:12px;color:var(--g400)">Select a client first</div>
+          </div>
         </div>
       </div>
+      <div id="sel-summary" style="font-size:12px;color:var(--g400);line-height:1.8;margin-top:12px"></div>
     </div>
   </div>
 
@@ -245,7 +237,7 @@ td{padding:7px 12px;vertical-align:middle}
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <div>
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;letter-spacing:.04em;text-transform:uppercase">Client Profiles</h2>
-      <p style="font-size:12px;color:var(--g400);margin-top:2px">Synced across your whole team. Add a client once — it's available for everyone instantly.</p>
+      <p style="font-size:12px;color:var(--g400);margin-top:2px">Synced across your whole team via Google Sheets. Add a client once — available for everyone instantly.</p>
     </div>
     <div style="display:flex;gap:10px;align-items:center">
       <button class="btn btn-ghost btn-sm" onclick="loadProfiles()">↻ Refresh</button>
@@ -261,37 +253,52 @@ td{padding:7px 12px;vertical-align:middle}
 <div class="view" id="view-settings">
 
   <div class="settings-box">
-    <h3>☁ Google Sheets Sync Setup</h3>
-    <p>Connect the tool to Google Sheets so client profiles are shared across your whole team. This is a one-time 5-minute setup. Once done, any team member who opens the tool will see the same profiles automatically.</p>
-
-    <div class="setup-steps">
-      <div class="setup-step"><span class="step-dot">01</span><div class="step-text">Go to <strong>sheets.google.com</strong> → Create a new blank spreadsheet → Name it <strong>"WB Media — Client Profiles"</strong> → Share it with your team</div></div>
-      <div class="setup-step"><span class="step-dot">02</span><div class="step-text">Click <strong>Extensions → Apps Script</strong> in the menu bar</div></div>
-      <div class="setup-step"><span class="step-dot">03</span><div class="step-text">Delete all existing code in the editor. Open the <strong>wb_apps_script.gs</strong> file you downloaded alongside this tool → copy all of it → paste it into the Apps Script editor</div></div>
-      <div class="setup-step"><span class="step-dot">04</span><div class="step-text">Click the <strong>💾 Save</strong> icon, then click <strong>Deploy → New Deployment</strong></div></div>
-      <div class="setup-step"><span class="step-dot">05</span><div class="step-text">Click the gear ⚙ icon next to "Type" → select <strong>Web App</strong><br>Set: <strong>Execute as: Me</strong> · <strong>Who has access: Anyone</strong> → Click <strong>Deploy</strong></div></div>
-      <div class="setup-step"><span class="step-dot">06</span><div class="step-text">Click <strong>Authorise Access</strong> → choose your Google account → click <strong>Allow</strong></div></div>
-      <div class="setup-step"><span class="step-dot">07</span><div class="step-text">Copy the <strong>Web App URL</strong> (looks like <code>https://script.google.com/macros/s/XXXX/exec</code>) → paste it below → click Test Connection</div></div>
+    <h3>🤖 Anthropic API Key</h3>
+    <p>Required for automatic PDF caption extraction. Your key is stored only in your browser — never in the code or on GitHub. Get your key at <strong>console.anthropic.com → API Keys</strong>.</p>
+    <div class="url-row">
+      <div>
+        <label>API Key</label>
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-XXXXXXXX" oninput="onApiKeyInput()"/>
+        <p class="hint">Stored locally in your browser only. Never shared or uploaded anywhere.</p>
+      </div>
+      <button class="btn btn-primary btn-sm" onclick="saveApiKey()" id="saveApiBtn" disabled>Save Key</button>
     </div>
+    <div id="apiKeyStatus" class="test-result"></div>
+  </div>
 
-    <div class="url-test">
+  <div class="settings-box">
+    <h3>☁ Google Sheets Sync</h3>
+    <p>Connect the tool to Google Sheets so client profiles sync across your whole team. One-time setup — paste your Apps Script Web App URL below.</p>
+    <div class="setup-steps">
+      <div class="setup-step"><span class="s-dot">01</span><div class="s-text">Go to <strong>sheets.google.com</strong> → Create a blank spreadsheet → Name it <strong>"WB Media — Client Profiles"</strong> → Share with your team</div></div>
+      <div class="setup-step"><span class="s-dot">02</span><div class="s-text">Click <strong>Extensions → Apps Script</strong> → delete all code → paste the <strong>wb_apps_script.gs</strong> content → Save</div></div>
+      <div class="setup-step"><span class="s-dot">03</span><div class="s-text">Click <strong>Deploy → New Deployment</strong> → gear icon → <strong>Web App</strong> → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong> → Deploy → Authorise</div></div>
+      <div class="setup-step"><span class="s-dot">04</span><div class="s-text">Copy the <strong>Web App URL</strong> → paste below → Test Connection → Save &amp; Connect</div></div>
+    </div>
+    <div class="url-row">
       <div>
         <label>Apps Script Web App URL</label>
         <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/XXXXXXXXXX/exec" oninput="onUrlInput()"/>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="testConnection()" id="testBtn" style="margin-bottom:0">Test Connection</button>
-      <button class="btn btn-primary btn-sm" onclick="saveSettings()" id="saveSettingsBtn" disabled style="margin-bottom:0">Save &amp; Connect</button>
+      <button class="btn btn-ghost btn-sm" onclick="testConnection()" id="testBtn">Test</button>
+      <button class="btn btn-primary btn-sm" onclick="saveSettings()" id="saveSettingsBtn" disabled>Save &amp; Connect</button>
     </div>
     <div id="testResult" class="test-result"></div>
   </div>
 
   <div class="settings-box">
-    <h3>ℹ About This Tool</h3>
-    <p style="margin-bottom:0">
-      Built for <strong>WB Media</strong> by Claude (Anthropic).<br>
-      Version 1.0 — PDF extraction, auto URL building, Social Pilot CSV export, team sync via Google Sheets.<br><br>
-      To share with your team: save the HTML file to a shared <strong>Dropbox folder</strong> → right-click → Share → Copy Link → change <code>?dl=0</code> to <code>?raw=1</code> → send that URL to your team.
-    </p>
+    <h3>📐 Filename Convention</h3>
+    <p style="margin-bottom:0">Asset files in Dropbox should be named using this convention so URLs are built automatically:<br><br>
+    <code>ClientPrefix_DD.MM.YY.ext</code><br><br>
+    Examples: <code>PiccoloMe_14.05.26.mp4</code> &nbsp;·&nbsp; <code>Doughkyo_21.05.26.jpg</code><br><br>
+    Videos (Reels) use <code>.mp4</code> — all other post types use <code>.jpg</code>. The prefix must match exactly what's entered in the client profile.</p>
+  </div>
+
+  <div class="settings-box">
+    <h3>ℹ About</h3>
+    <p style="margin-bottom:0">Built for <strong>WB Media</strong> by Claude (Anthropic). Version 2.0<br>
+    PDF extraction · Auto URL building · Multi-platform · Social Pilot CSV · Team sync via Google Sheets<br><br>
+    Tool URL: <code>https://wbmedia-au.github.io/Scheduler</code> — bookmark and share with your team.</p>
   </div>
 </div>
 
@@ -327,30 +334,33 @@ td{padding:7px 12px;vertical-align:middle}
         <div class="ar-hdr"><span>Platform</span><span>Social Pilot Account ID</span><span></span></div>
         <div id="acctRows"></div>
         <button class="btn btn-ghost btn-sm mt" onclick="addAcctRow('','')">+ Add Platform</button>
-        <p class="hint" style="margin-top:8px">Find Account IDs in Social Pilot: <strong>Accounts → Manage Account</strong> → click account → copy number from the URL bar.</p>
+        <p class="hint" style="margin-top:8px">Find Account IDs: Social Pilot → <strong>Accounts → Manage Account</strong> → click account → copy number from the URL.</p>
       </div>
     </div>
     <div class="modal-foot">
       <button class="btn btn-ghost" onclick="closeModal()">Cancel</button>
-      <button class="btn btn-primary" id="modalSaveBtn" onclick="saveClient()">Save Client</button>
+      <button class="btn btn-primary" onclick="saveClient()">Save Client</button>
     </div>
   </div>
 </div>
 
 <script>
-// ─── CONFIG & STATE ────────────────────────────────────────────────────────────
-const CACHE_KEY   = 'wb_clients_v3';
-const SCRIPT_KEY  = 'wb_script_url';
-const PLATFORMS   = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
-const TYPE_EXT    = {
+// ─── CONFIG ────────────────────────────────────────────────────────────────────
+const CACHE_KEY  = 'wb_clients_v3';
+const SCRIPT_KEY = 'wb_script_url';
+const APIKEY_KEY = 'wb_api_key';
+const PLATFORMS  = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
+const TYPE_EXT   = {
   'CAROUSEL':'jpg','PHOTO':'jpg','GRAPHIC':'jpg','STORY':'jpg',
   'REEL':'mp4','VIDEO':'mp4','REEL/VIDEO':'mp4','REEL / VIDEO':'mp4'
 };
 
-let clients    = [];
-let posts      = [];
-let editingId  = null;
-let scriptUrl  = localStorage.getItem(SCRIPT_KEY) || '';
+// ─── STATE ─────────────────────────────────────────────────────────────────────
+let clients   = [];
+let posts     = [];
+let editingId = null;
+let scriptUrl = localStorage.getItem(SCRIPT_KEY) || '';
+let apiKey    = localStorage.getItem(APIKEY_KEY)  || '';
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
@@ -362,9 +372,48 @@ function setSyncPill(type, msg){
 }
 
 // ─── SETTINGS ──────────────────────────────────────────────────────────────────
+function onApiKeyInput(){
+  document.getElementById('saveApiBtn').disabled = !document.getElementById('apiKeyInput').value.trim();
+}
+
+function saveApiKey(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  apiKey = key;
+  localStorage.setItem(APIKEY_KEY, key);
+  const el = document.getElementById('apiKeyStatus');
+  el.className = 'test-result ok';
+  el.textContent = '✓ API key saved. PDF extraction is now enabled.';
+}
+
 function onUrlInput(){
-  const val = document.getElementById('scriptUrl').value.trim();
-  document.getElementById('saveSettingsBtn').disabled = !val;
+  document.getElementById('saveSettingsBtn').disabled = !document.getElementById('scriptUrl').value.trim();
+}
+
+async function testConnection(){
+  const url = document.getElementById('scriptUrl').value.trim();
+  if (!url){ showTestResult(false,'Please enter the Web App URL first.'); return; }
+  const btn = document.getElementById('testBtn');
+  btn.textContent = '…'; btn.disabled = true;
+  try {
+    const res  = await fetch(url, {mode:'cors'});
+    const data = await res.json();
+    if (data.ok !== undefined){
+      showTestResult(true, `✓ Connected! Found ${(data.clients||[]).length} client profiles.`);
+      document.getElementById('saveSettingsBtn').disabled = false;
+    } else {
+      showTestResult(false,'Connected but unexpected response. Check the script deployment.');
+    }
+  } catch(e){
+    showTestResult(false,'Could not connect. Make sure "Who has access" is set to "Anyone" in the deployment.');
+  }
+  btn.textContent = 'Test'; btn.disabled = false;
+}
+
+function showTestResult(ok, msg){
+  const el = document.getElementById('testResult');
+  el.className = 'test-result ' + (ok ? 'ok' : 'fail');
+  el.textContent = msg;
 }
 
 function saveSettings(){
@@ -377,37 +426,10 @@ function saveSettings(){
   switchView('clients');
 }
 
-async function testConnection(){
-  const url = document.getElementById('scriptUrl').value.trim();
-  if (!url){ showTestResult(false,'Please enter the Web App URL first.'); return; }
-  const btn = document.getElementById('testBtn');
-  btn.textContent = 'Testing…'; btn.disabled = true;
-  try {
-    const res = await fetch(url, {mode:'cors'});
-    const data = await res.json();
-    if (data.ok !== undefined){
-      showTestResult(true, `✓ Connected! Found ${(data.clients||[]).length} client profiles.`);
-      document.getElementById('saveSettingsBtn').disabled = false;
-    } else {
-      showTestResult(false, 'Connected but got unexpected response. Check the script is deployed correctly.');
-    }
-  } catch(e){
-    showTestResult(false, `Could not connect. Make sure the URL is correct and "Who has access" is set to "Anyone".`);
-  }
-  btn.textContent = 'Test Connection'; btn.disabled = false;
-}
-
-function showTestResult(ok, msg){
-  const el = document.getElementById('testResult');
-  el.className = 'test-result ' + (ok ? 'ok' : 'fail');
-  el.textContent = msg;
-}
-
 // ─── LOAD PROFILES ─────────────────────────────────────────────────────────────
 async function loadProfiles(){
   if (!scriptUrl){
     setSyncPill('err','⚠ Not connected');
-    // Load from local cache if available
     const cached = getCached();
     if (cached.length){ clients = cached; populateClientDropdown(); renderClientGrid(); }
     else {
@@ -418,16 +440,15 @@ async function loadProfiles(){
   }
   setSyncPill('busy','⟳ Loading…');
   try {
-    const res  = await fetch(scriptUrl, {mode:'cors'});
+    const res  = await fetch(scriptUrl + '?t=' + Date.now(), {mode:'cors'});
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Unknown error');
+    if (!data.ok) throw new Error(data.error || 'Error');
     clients = data.clients || [];
     setCached(clients);
     setSyncPill('ok','☁ Synced');
     populateClientDropdown();
     renderClientGrid();
   } catch(e){
-    console.warn('Load failed:', e);
     const cached = getCached();
     if (cached.length){
       clients = cached;
@@ -447,23 +468,20 @@ async function saveProfiles(){
   setSyncPill('busy','⟳ Saving…');
   try {
     const res = await fetch(scriptUrl, {
-      method  : 'POST',
-      mode    : 'cors',
-      headers : {'Content-Type':'application/json'},
-      body    : JSON.stringify({ action:'save_all', clients })
+      method:'POST', mode:'cors',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ action:'save_all', clients })
     });
     const data = await res.json();
     if (!data.ok) throw new Error(data.error);
     setSyncPill('ok','☁ Saved');
   } catch(e){
-    console.warn('Save failed:', e);
     setSyncPill('err','⚠ Saved locally — sync failed');
   }
 }
 
-// ─── LOCAL CACHE ───────────────────────────────────────────────────────────────
 function getCached(){ try{ return JSON.parse(localStorage.getItem(CACHE_KEY)||'[]'); }catch(e){ return []; } }
-function setCached(data){ localStorage.setItem(CACHE_KEY, JSON.stringify(data)); }
+function setCached(d){ localStorage.setItem(CACHE_KEY, JSON.stringify(d)); }
 
 // ─── VIEWS ─────────────────────────────────────────────────────────────────────
 function switchView(v){
@@ -474,6 +492,7 @@ function switchView(v){
   if (v === 'settings'){
     document.getElementById('scriptUrl').value = scriptUrl;
     document.getElementById('saveSettingsBtn').disabled = !scriptUrl;
+    if (apiKey) document.getElementById('apiKeyInput').value = apiKey;
   }
 }
 
@@ -494,38 +513,53 @@ function populateClientDropdown(){
 function onClientSelect(){
   const id = document.getElementById('sel-client').value;
   const c  = clients.find(x => x.id === id);
-  const ps = document.getElementById('sel-platform');
-  ps.innerHTML = '<option value="">— Select platform —</option>';
-  if (!c){ document.getElementById('sel-summary').innerHTML = ''; return; }
-  (c.accounts||[]).forEach(a => {
-    const o = document.createElement('option');
-    o.value = a.accountId || '';
-    o.textContent = a.platform + (a.accountId ? ` (ID: ${a.accountId})` : ' — no ID yet');
-    ps.appendChild(o);
+  const checksDiv = document.getElementById('platformChecks');
+  checksDiv.innerHTML = '';
+  document.getElementById('sel-summary').innerHTML = '';
+
+  if (!c){
+    checksDiv.innerHTML = '<div style="font-size:12px;color:var(--g400)">Select a client first</div>';
+    return;
+  }
+
+  // Render platform checkboxes
+  (c.accounts||[]).forEach((a,i) => {
+    const label = document.createElement('label');
+    label.className = 'plat-check' + (i===0?' selected':'');
+    label.dataset.accountId = a.accountId || '';
+    label.dataset.platform  = a.platform;
+    label.innerHTML = `<input type="checkbox" ${i===0?'checked':''}> ${a.platform}${a.accountId?'':' <span style="color:#e65100;font-size:10px">(no ID)</span>'}`;
+    label.addEventListener('click', function(e){
+      e.preventDefault();
+      this.classList.toggle('selected');
+      const cb = this.querySelector('input');
+      cb.checked = !cb.checked;
+    });
+    checksDiv.appendChild(label);
   });
+
   if (c.defaultTime) document.getElementById('defaultTime').value = c.defaultTime;
-  updateSelSummary();
+
+  document.getElementById('sel-summary').innerHTML =
+    `<span style="color:var(--black);font-weight:600">${escHtml(c.name)}</span> &nbsp;·&nbsp; `+
+    (c.dropboxPrefix
+      ? `Prefix: <code>${escHtml(c.dropboxPrefix)}</code>`
+      : '<span style="color:#e65100">⚠ No filename prefix set in profile</span>');
+
   rebuildAllUrls();
 }
 
-function updateSelSummary(){
-  const id = document.getElementById('sel-client').value;
-  const c  = clients.find(x => x.id === id);
-  if (!c) return;
-  const accountId = document.getElementById('sel-platform').value;
-  document.getElementById('sel-summary').innerHTML =
-    `<span style="color:var(--black);font-weight:600">${escHtml(c.name)}</span><br>`+
-    (c.dropboxPrefix
-      ? `Prefix: <code>${escHtml(c.dropboxPrefix)}</code><br>`
-      : '<span style="color:#e65100">⚠ No prefix set</span><br>')+
-    (accountId
-      ? `Account ID: <code>${escHtml(accountId)}</code>`
-      : '<span style="color:var(--g400)">No ID — select manually in Social Pilot</span>');
+function getSelectedAccounts(){
+  return Array.from(document.querySelectorAll('.plat-check.selected')).map(el => ({
+    platform  : el.dataset.platform,
+    accountId : el.dataset.accountId
+  }));
 }
 
 // ─── FILE UPLOAD ───────────────────────────────────────────────────────────────
 function handleFile(file){
   if (!file || file.type !== 'application/pdf'){ showStatus('error','Please upload a valid PDF file.'); return; }
+  if (!apiKey){ showStatus('error','Please add your Anthropic API key in Settings first.'); return; }
   showStatus('loading',`Reading "${file.name}"…`);
   const reader = new FileReader();
   reader.onload = async e => await extractPosts(e.target.result.split(',')[1], file.name);
@@ -547,13 +581,19 @@ async function extractPosts(base64, filename){
 - POST TYPE: CAROUSEL / REEL / VIDEO / PHOTO / GRAPHIC / STORY
 - CAPTION: full text with emojis and hashtags
 
-Return ONLY valid JSON, no markdown, no explanation:
+Return ONLY valid JSON, no markdown:
 {"client":"<brand name no spaces>","posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags"}]}
 
 Rules: complete captions with all emojis and hashtags. Exclude non-post slides (cover, grid preview, feedback).`;
   try {
     const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST', headers:{'Content-Type':'application/json'},
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version':'2023-06-01',
+        'anthropic-dangerous-direct-browser-access':'true'
+      },
       body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000,
         messages:[{ role:'user', content:[
           { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 }},
@@ -571,7 +611,9 @@ Rules: complete captions with all emojis and hashtags. Exclude non-post slides (
     updateCount();
   } catch(err){
     console.error(err);
-    showStatus('error','Could not parse PDF. Make sure it is a WB Media content calendar.');
+    showStatus('error', err.message.includes('401')
+      ? 'Invalid API key — check your key in Settings.'
+      : 'Could not parse PDF. Make sure it is a WB Media content calendar.');
   }
 }
 
@@ -651,14 +693,21 @@ function renderTable(){
 // ─── CSV EXPORT ────────────────────────────────────────────────────────────────
 function generateCSV(){
   if (!posts.length) return;
-  const accountId = document.getElementById('sel-platform').value || '';
-  const platSel   = document.getElementById('sel-platform');
-  const platName  = platSel.options[platSel.selectedIndex]?.text?.split(' (')[0] || '';
-  const rows = posts.map((p,i) => {
+  const accounts = getSelectedAccounts();
+  if (!accounts.length){ alert('Please select at least one platform to post to.'); return; }
+
+  // Generate one row per post per selected platform
+  const rows = [];
+  posts.forEach((p,i) => {
     const url = p.manualUrl || p.autoUrl || '';
     const t   = document.getElementById(`time-${i}`)?.value || '09:00';
-    return `"${p.caption.replace(/"/g,'""')}","${url}","${fmtDateCSV(p.date,t)}","${accountId}","","${platName}"`;
+    const dt  = fmtDateCSV(p.date, t);
+    const cap = p.caption.replace(/"/g,'""');
+    accounts.forEach(a => {
+      rows.push(`"${cap}","${url}","${dt}","${a.accountId}","","${a.platform}"`);
+    });
   });
+
   const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -682,9 +731,10 @@ function renderClientGrid(){
       ? '<div class="ei">⚙️</div><p>Go to <strong>Settings</strong> to connect Google Sheets sync first</p>'
       : '<div class="ei">👥</div><p>No clients yet — add your first client</p>';
     grid.appendChild(empty);
+    return;
   }
   clients.forEach(c => {
-    const div    = document.createElement('div');
+    const div = document.createElement('div');
     div.className = 'client-card';
     const badges = (c.accounts||[]).map(a =>
       `<span class="badge b-grey" style="margin-right:3px">${escHtml(a.platform)}${a.accountId?' ✓':''}</span>`
@@ -719,7 +769,7 @@ function openModal(id){
   document.getElementById('m-dropbox').value = c?.dropboxFolder || '';
   document.getElementById('m-time').value    = c?.defaultTime || '09:00';
   document.getElementById('acctRows').innerHTML = '';
-  const accounts = c?.accounts?.length ? c.accounts : [{platform:'Instagram',accountId:''}];
+  const accounts = c?.accounts?.length ? c.accounts : [{platform:'Instagram',accountId:''},{platform:'Facebook',accountId:''}];
   accounts.forEach(a => addAcctRow(a.platform, a.accountId));
   document.getElementById('modalBg').classList.add('open');
 }
@@ -739,10 +789,10 @@ function addAcctRow(platform='', accountId=''){
 }
 
 async function saveClient(){
-  const name         = document.getElementById('m-name').value.trim();
-  const prefix       = document.getElementById('m-prefix').value.trim();
-  const dropboxFolder= document.getElementById('m-dropbox').value.trim().split('?')[0];
-  const defaultTime  = document.getElementById('m-time').value;
+  const name          = document.getElementById('m-name').value.trim();
+  const prefix        = document.getElementById('m-prefix').value.trim();
+  const dropboxFolder = document.getElementById('m-dropbox').value.trim().split('?')[0];
+  const defaultTime   = document.getElementById('m-time').value;
   if (!name){ alert('Client name is required'); return; }
   const accounts = [];
   document.querySelectorAll('.ar').forEach(row => {
@@ -809,11 +859,8 @@ function onTimeChange(){
 function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 // ─── INIT ───────────────────────────────────────────────────────────────────────
-// Load cached profiles immediately so the UI isn't blank
 const cached = getCached();
 if (cached.length){ clients = cached; populateClientDropdown(); renderClientGrid(); }
-
-// Then fetch fresh from Sheets in background
 loadProfiles();
 </script>
 </body>
