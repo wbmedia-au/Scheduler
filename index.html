@@ -592,10 +592,9 @@ Important: include complete captions with ALL emojis and hashtags. Skip non-post
     const res = await fetch('https://dark-rain-9ad1.accounts-980.workers.dev/', {
       method : 'POST',
       headers: {
-        'Content-Type'                            : 'application/json',
-        'x-api-key'                               : apiKey,
-        'anthropic-version'                       : '2023-06-01',
-        'anthropic-dangerous-direct-browser-access': 'true'
+        'Content-Type'   : 'application/json',
+        'x-api-key'      : apiKey,
+        'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify({
         model      : 'claude-sonnet-4-20250514',
