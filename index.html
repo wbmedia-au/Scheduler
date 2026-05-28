@@ -172,11 +172,11 @@ td{padding:7px 12px;vertical-align:middle}
 
       <div style="background:var(--black);border-radius:4px;padding:14px 16px;margin-bottom:16px">
         <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g400);margin-bottom:8px">Claude Prompt — copy and paste into claude.ai with your PDF attached</div>
-        <textarea id="promptText" readonly rows="7" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;color:#e0e0e0;line-height:1.7;font-family:monospace;resize:none;cursor:text">Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
+        <textarea id="promptText" readonly rows="9" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;color:#e0e0e0;line-height:1.7;font-family:monospace;resize:none;cursor:text">Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
 
-{"posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags"}]}
+{"posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags","dropbox_url":"https://www.dropbox.com/..."}]}
 
-Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. Return only the JSON — no explanation before or after.</textarea>
+Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "". Return only the JSON — no explanation before or after.</textarea>
         <button class="btn btn-ghost btn-sm" onclick="copyPrompt()" style="margin-top:10px;border-color:#444;color:#aaa">📋 Copy Prompt</button>
         <div id="copyMsg" style="display:none;font-size:11px;color:#81c784;margin-top:6px">✓ Copied to clipboard!</div>
       </div>
@@ -280,11 +280,12 @@ Include every post slide. Skip cover pages, grid previews and feedback slides. I
 
   <div class="settings-box">
     <h3>📐 Filename Convention</h3>
-    <p style="margin-bottom:0">Asset files in Dropbox must follow this naming pattern for URLs to build automatically:<br><br>
-    <code>ClientPrefix_DD.MM.YY.ext</code><br><br>
-    Examples: &nbsp;<code>PiccoloMe_14.05.26.mp4</code> &nbsp;·&nbsp; <code>Doughkyo_21.05.26.jpg</code><br><br>
+    <p style="margin-bottom:0">Asset files in Dropbox must follow this naming pattern:<br><br>
+    <code>ClientPrefix_01.jpg</code>, <code>ClientPrefix_02.jpg</code>, <code>ClientPrefix_03.mp4</code> etc.<br><br>
+    Files are numbered sequentially in post order — Post 1 = <code>_01</code>, Post 2 = <code>_02</code> and so on.<br>
     Reels/Videos → <code>.mp4</code> &nbsp;·&nbsp; All other types → <code>.jpg</code><br><br>
-    The prefix must match exactly what's saved in the client profile.</p>
+    Examples: &nbsp;<code>PiccoloMe_01.jpg</code> &nbsp;·&nbsp; <code>PiccoloMe_02.mp4</code> &nbsp;·&nbsp; <code>Doughkyo_01.jpg</code><br><br>
+    If a file is named differently, use the <strong>manual override URL</strong> field in the scheduler.</p>
   </div>
 
   <div class="settings-box">
@@ -580,18 +581,24 @@ function loadFromJSON(){
   const loadMsg = document.getElementById('loadMsg');
   if (!raw){ loadMsg.style.color='#c62828'; loadMsg.textContent='Please paste the JSON from Claude first.'; return; }
   try {
-    // Auto-clean: extract just the JSON object even if Claude added extra text
     const jsonMatch = raw.match(/\{[\s\S]*\}/);
     if (!jsonMatch) throw new Error('No JSON found');
-    const clean  = jsonMatch[0];
-    const parsed = JSON.parse(clean);
+    const parsed = JSON.parse(jsonMatch[0]);
     posts = parsed.posts || [];
     if (!posts.length) throw new Error('No posts found');
+    // Pre-populate autoUrl from dropbox_url on slide if present
+    posts.forEach((p,i) => {
+      if (p.dropbox_url && p.dropbox_url.includes('dropbox.com')) {
+        p.autoUrl = fixDropbox(p.dropbox_url);
+        p.urlSource = 'slide';
+      }
+    });
     rebuildAllUrls();
     renderTable();
     updateCount();
+    const withUrls = posts.filter(p => p.autoUrl).length;
     loadMsg.style.color = 'var(--green)';
-    loadMsg.textContent = `✓ ${posts.length} posts loaded successfully!`;
+    loadMsg.textContent = `✓ ${posts.length} posts loaded — ${withUrls} Dropbox URLs found automatically, ${posts.length - withUrls} need manual URL.`;
     document.getElementById('jsonPaste').value = '';
   } catch(e){
     loadMsg.style.color = '#c62828';
@@ -602,15 +609,17 @@ function loadFromJSON(){
 // ─── URL BUILDING ──────────────────────────────────────────────────────────────
 function getExt(t){ return TYPE_EXT[t?.toUpperCase()]||TYPE_EXT[t]||'jpg'; }
 
-function buildUrl(post){
+function buildUrl(post, index){
   const c = clients.find(x => x.id === document.getElementById('sel-client').value);
   if (!c||!c.dropboxFolder||!c.dropboxPrefix) return null;
-  const base = c.dropboxFolder.split('?')[0].replace(/\/+$/,'');
-  return `${base}/${c.dropboxPrefix}_${post.date}.${getExt(post.post_type)}?dl=1`;
+  const base   = c.dropboxFolder.split('?')[0].replace(/\/+$/,'');
+  const num    = String(index + 1).padStart(2, '0');
+  const ext    = getExt(post.post_type);
+  return `${base}/${c.dropboxPrefix}_${num}.${ext}?dl=1`;
 }
 
 function rebuildAllUrls(){
-  posts.forEach((p,i) => { if (!p.manualUrl) p.autoUrl = buildUrl(p); });
+  posts.forEach((p,i) => { if (!p.manualUrl) p.autoUrl = buildUrl(p, i); });
   posts.forEach((p,i) => { const cell = document.getElementById(`uc-${i}`); if(cell) renderUrlCell(cell,p,i); });
 }
 
@@ -627,14 +636,17 @@ function renderUrlCell(cell, post, i){
   if (ov){
     tag     = '<span class="badge b-blue" style="display:inline-block;margin-bottom:4px">Manual Override</span>';
     urlHtml = `<div style="font-size:11px;font-family:monospace;color:#1565c0;word-break:break-all;line-height:1.4">${escHtml(ov)}</div>`;
+  } else if (post.autoUrl && post.urlSource === 'slide'){
+    tag     = '<span class="badge b-green" style="display:inline-block;margin-bottom:4px">✓ From Canva Slide</span>';
+    urlHtml = `<div style="font-size:11px;font-family:monospace;color:var(--green);word-break:break-all;line-height:1.4">${escHtml(post.autoUrl)}</div>`;
   } else if (post.autoUrl){
     tag     = '<span class="badge b-green" style="display:inline-block;margin-bottom:4px">Auto ✓</span>';
     urlHtml = `<div style="font-size:11px;font-family:monospace;color:var(--green);word-break:break-all;line-height:1.4">${escHtml(post.autoUrl)}</div>`;
   } else {
-    tag     = '<span class="badge b-orange" style="display:inline-block;margin-bottom:4px">Needs Setup</span>';
-    urlHtml = '<div style="font-size:11px;color:var(--g400)">Add Dropbox folder in client profile</div>';
+    tag     = '<span class="badge b-orange" style="display:inline-block;margin-bottom:4px">Paste URL</span>';
+    urlHtml = '<div style="font-size:11px;color:var(--g400)">No Dropbox link on slide — paste URL below</div>';
   }
-  cell.innerHTML = `<div>${tag}${urlHtml}<input class="tbl-input" style="margin-top:5px;font-family:monospace;font-size:11px" id="ov-${i}" placeholder="Paste URL to override…" value="${escHtml(ov)}" oninput="onOverride(${i},this.value)"/></div>`;
+  cell.innerHTML = `<div>${tag}${urlHtml}<input class="tbl-input" style="margin-top:5px;font-family:monospace;font-size:11px" id="ov-${i}" placeholder="Paste Dropbox URL…" value="${escHtml(ov)}" oninput="onOverride(${i},this.value)"/></div>`;
 }
 
 function onOverride(i, val){
