@@ -13,7 +13,6 @@
   --border:#DDDCDA;--green:#2e7d32;--gl:#E8F5E9;--gb:#a5d6a7;
 }
 body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--black);min-height:100vh;font-size:14px}
-
 header{background:var(--black);border-bottom:3px solid var(--red);display:flex;align-items:center;justify-content:space-between;padding:0 32px}
 .logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;color:var(--white);letter-spacing:.04em;padding:16px 0}
 .logo span{color:var(--red)}
@@ -25,16 +24,13 @@ nav button.active{color:var(--white);border-bottom-color:var(--red)}
 .sync-pill.ok{background:rgba(46,125,50,.2);color:#81c784}
 .sync-pill.err{background:rgba(198,40,40,.2);color:#ef9a9a}
 .sync-pill.busy{background:rgba(255,255,255,.08);color:var(--g400)}
-
 .view{display:none;max-width:1140px;margin:0 auto;padding:28px 24px 60px}
 .view.active{display:block}
-
 .step{margin-bottom:18px;background:#fff;border:1px solid var(--border);border-radius:4px;overflow:hidden}
 .step-header{background:var(--black);padding:11px 20px;display:flex;align-items:center;gap:14px}
 .step-num{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--red);background:rgba(204,21,21,.12);border:1px solid rgba(204,21,21,.3);border-radius:2px;padding:2px 8px;text-transform:uppercase}
 .step-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.06em;color:var(--white);text-transform:uppercase}
 .step-body{padding:20px}
-
 label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--g600);margin-bottom:5px}
 input[type=text],input[type=time],input[type=url],input[type=password],select{width:100%;border:1px solid var(--border);border-radius:3px;padding:9px 12px;font-size:13px;font-family:'Barlow',sans-serif;color:var(--black);background:var(--white);outline:none;transition:.15s}
 input:focus,select:focus{border-color:var(--red)}
@@ -43,28 +39,24 @@ input:focus,select:focus{border-color:var(--red)}
 .mt{margin-top:14px}
 .hint{font-size:11px;color:var(--g400);margin-top:4px;line-height:1.5}
 code{font-family:monospace;background:var(--g100);padding:1px 5px;border-radius:2px;font-size:11px}
-
 .upload-zone{border:2px dashed var(--border);border-radius:4px;padding:32px 24px;text-align:center;cursor:pointer;transition:.2s;position:relative}
 .upload-zone:hover,.upload-zone.dragover{border-color:var(--red);background:#fff5f5}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .u-icon{font-size:26px;margin-bottom:8px;display:block}
 .u-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
 .u-sub{font-size:12px;color:var(--g400)}
-
 .status-bar{display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:3px;font-size:13px;font-weight:500;margin-top:12px}
 .status-bar.loading{background:#FFF8E1;color:#7a5900;display:flex}
 .status-bar.success{background:var(--gl);color:var(--green);display:flex}
 .status-bar.error{background:#FFEBEE;color:#c62828;display:flex}
 .spinner{width:15px;height:15px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-
 .btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;transition:.15s}
 .btn-primary{background:var(--red);color:#fff}.btn-primary:hover{background:var(--red-dark)}
 .btn-primary:disabled{background:var(--g200);color:var(--g400);cursor:not-allowed}
 .btn-ghost{background:transparent;color:var(--g600);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--g400);color:var(--black)}
 .btn-danger{background:transparent;color:#c62828;border:1px solid #FFCDD2}.btn-danger:hover{background:#FFEBEE}
 .btn-sm{padding:5px 12px;font-size:12px}.btn-xs{padding:3px 9px;font-size:11px}
-
 .table-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead tr{background:var(--g100);border-bottom:2px solid var(--border)}
@@ -73,16 +65,13 @@ tbody tr{border-bottom:1px solid var(--border);transition:.1s}
 tbody tr:hover{background:#fafaf9}
 tbody tr:last-child{border-bottom:none}
 td{padding:7px 12px;vertical-align:middle}
-
 .badge{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 7px;border-radius:2px;white-space:nowrap}
 .b-grey{background:var(--g100);color:var(--g600);border:1px solid var(--border)}
 .b-green{background:var(--gl);color:var(--green);border:1px solid var(--gb)}
 .b-blue{background:#E3F2FD;color:#1565c0;border:1px solid #90CAF9}
 .b-orange{background:#FFF3E0;color:#e65100;border:1px solid #FFCC80}
-
 .tbl-input{width:100%;border:1px solid var(--border);border-radius:3px;padding:5px 8px;font-size:12px;font-family:'Barlow',sans-serif;outline:none;transition:.15s;background:var(--white)}
 .tbl-input:focus{border-color:var(--red)}
-
 .client-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:14px}
 .client-card{background:#fff;border:1px solid var(--border);border-radius:4px;padding:16px;transition:.15s}
 .client-card:hover{border-color:var(--g400);box-shadow:0 2px 8px rgba(0,0,0,.06)}
@@ -91,7 +80,6 @@ td{padding:7px 12px;vertical-align:middle}
 .cc-actions{display:flex;gap:6px;margin-top:10px}
 .add-card{border:2px dashed var(--border);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;min-height:130px;cursor:pointer;background:none;border-radius:4px;transition:.15s;color:var(--g400);font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.06em;text-transform:uppercase;width:100%}
 .add-card:hover{border-color:var(--red);color:var(--red)}
-
 .modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:100;align-items:center;justify-content:center}
 .modal-bg.open{display:flex}
 .modal{background:#fff;border-radius:6px;width:100%;max-width:620px;max-height:90vh;overflow-y:auto;box-shadow:0 8px 40px rgba(0,0,0,.18)}
@@ -100,15 +88,12 @@ td{padding:7px 12px;vertical-align:middle}
 .modal-x{background:none;border:none;color:var(--g400);font-size:20px;cursor:pointer;line-height:1;padding:2px 6px}.modal-x:hover{color:#fff}
 .modal-body{padding:20px}
 .modal-foot{padding:14px 20px;border-top:1px solid var(--border);display:flex;justify-content:flex-end;gap:10px}
-
 .ar{display:grid;grid-template-columns:140px 1fr 32px;gap:8px;align-items:center;margin-bottom:8px}
 .ar-hdr{display:grid;grid-template-columns:140px 1fr 32px;gap:8px;margin-bottom:6px}
 .ar-hdr span{font-size:10px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--g600)}
-
 .instr{background:var(--g100);border-left:3px solid var(--red);padding:10px 14px;border-radius:0 3px 3px 0;margin-bottom:16px}
 .instr p{font-size:12px;color:var(--g600);line-height:1.6}
 .instr strong{color:var(--black)}
-
 .action-bar{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-top:16px}
 .post-count{font-size:12px;color:var(--g400)}
 .post-count strong{color:var(--black)}
@@ -120,26 +105,23 @@ td{padding:7px 12px;vertical-align:middle}
 .summary ol{padding-left:18px;font-size:12px;color:var(--green);line-height:2.2}
 .empty{text-align:center;padding:44px 24px;color:var(--g400)}
 .empty .ei{font-size:32px;margin-bottom:10px}
-
 .settings-box{background:#fff;border:1px solid var(--border);border-radius:4px;padding:24px;margin-bottom:18px}
 .settings-box h3{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.06em;text-transform:uppercase;margin-bottom:4px}
-.settings-box p{font-size:12px;color:var(--g600);margin-bottom:16px;line-height:1.6}
-.setup-steps{margin:16px 0}
-.setup-step{display:flex;gap:12px;margin-bottom:12px;align-items:flex-start}
+.settings-box p{font-size:12px;color:var(--g600);margin-bottom:14px;line-height:1.6}
+.setup-steps{margin:14px 0}
+.setup-step{display:flex;gap:12px;margin-bottom:10px;align-items:flex-start}
 .s-dot{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:12px;color:var(--red);background:rgba(204,21,21,.1);border:1px solid rgba(204,21,21,.2);border-radius:2px;padding:2px 7px;flex-shrink:0;margin-top:1px}
 .s-text{font-size:12px;color:var(--g600);line-height:1.6}
 .s-text strong{color:var(--black)}
-.url-row{display:flex;gap:8px;align-items:flex-end;margin-top:14px}
-.url-row>div:first-child{flex:1}
-.test-result{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:3px;display:none}
-.test-result.ok{background:var(--gl);color:var(--green);display:block}
-.test-result.fail{background:#FFEBEE;color:#c62828;display:block}
-
-/* MULTI SELECT PLATFORMS */
-.platform-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
+.field-row{display:flex;gap:8px;align-items:flex-end;margin-top:12px}
+.field-row>div:first-child{flex:1}
+.result-msg{font-size:12px;margin-top:8px;padding:8px 12px;border-radius:3px;display:none}
+.result-msg.ok{background:var(--gl);color:var(--green);display:block}
+.result-msg.fail{background:#FFEBEE;color:#c62828;display:block}
+.plat-checks{display:flex;flex-wrap:wrap;gap:8px;margin-top:6px}
 .plat-check{display:flex;align-items:center;gap:6px;font-size:12px;cursor:pointer;background:var(--g100);border:1px solid var(--border);border-radius:3px;padding:5px 10px;transition:.15s;user-select:none}
 .plat-check:hover{border-color:var(--g400)}
-.plat-check.selected{background:rgba(204,21,21,.08);border-color:rgba(204,21,21,.3);color:var(--red);font-weight:600}
+.plat-check.on{background:rgba(204,21,21,.08);border-color:rgba(204,21,21,.3);color:var(--red);font-weight:600}
 .plat-check input{display:none}
 </style>
 </head>
@@ -152,14 +134,13 @@ td{padding:7px 12px;vertical-align:middle}
     <button id="tab-clients" onclick="switchView('clients')">👥 Client Profiles</button>
     <button id="tab-settings" onclick="switchView('settings')">⚙ Settings</button>
   </nav>
-  <div style="display:flex;align-items:center;gap:12px;padding-right:4px">
-    <div class="sync-pill busy" id="syncPill">⟳ Connecting…</div>
+  <div style="padding-right:4px">
+    <div class="sync-pill busy" id="syncPill">⟳ Loading…</div>
   </div>
 </header>
 
-<!-- ══ SCHEDULER ══════════════════════════════════════════════════════════ -->
+<!-- SCHEDULER -->
 <div class="view active" id="view-scheduler">
-
   <div class="step">
     <div class="step-header"><span class="step-num">Step 01</span><span class="step-title">Select Client &amp; Platforms</span></div>
     <div class="step-body">
@@ -169,14 +150,12 @@ td{padding:7px 12px;vertical-align:middle}
           <select id="sel-client" onchange="onClientSelect()"><option value="">— Select client —</option></select>
         </div>
         <div>
-          <label>Post Time (default)</label>
+          <label>Default Post Time</label>
           <input type="time" id="defaultTime" value="09:00" style="width:auto" onchange="onTimeChange()"/>
         </div>
         <div style="grid-column:span 2">
           <label>Platforms to post to</label>
-          <div class="platform-checks" id="platformChecks">
-            <div class="empty" style="padding:8px 0;font-size:12px;color:var(--g400)">Select a client first</div>
-          </div>
+          <div class="plat-checks" id="platChecks"><div style="font-size:12px;color:var(--g400)">Select a client first</div></div>
         </div>
       </div>
       <div id="sel-summary" style="font-size:12px;color:var(--g400);line-height:1.8;margin-top:12px"></div>
@@ -232,77 +211,86 @@ td{padding:7px 12px;vertical-align:middle}
   </div>
 </div>
 
-<!-- ══ CLIENT PROFILES ════════════════════════════════════════════════════ -->
+<!-- CLIENTS -->
 <div class="view" id="view-clients">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:20px">
     <div>
       <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;letter-spacing:.04em;text-transform:uppercase">Client Profiles</h2>
-      <p style="font-size:12px;color:var(--g400);margin-top:2px">Synced across your whole team via Google Sheets. Add a client once — available for everyone instantly.</p>
+      <p style="font-size:12px;color:var(--g400);margin-top:2px">Synced across your whole team via JSONBin. Add a client once — available for everyone instantly.</p>
     </div>
-    <div style="display:flex;gap:10px;align-items:center">
+    <div style="display:flex;gap:10px">
       <button class="btn btn-ghost btn-sm" onclick="loadProfiles()">↻ Refresh</button>
       <button class="btn btn-primary" onclick="openModal()">+ Add Client</button>
     </div>
   </div>
   <div class="client-grid" id="clientGrid">
-    <div class="empty" style="grid-column:1/-1"><div class="ei">⟳</div><p>Loading profiles…</p></div>
+    <div class="empty" style="grid-column:1/-1"><div class="ei">⟳</div><p>Loading…</p></div>
   </div>
 </div>
 
-<!-- ══ SETTINGS ═══════════════════════════════════════════════════════════ -->
+<!-- SETTINGS -->
 <div class="view" id="view-settings">
 
   <div class="settings-box">
-    <h3>🤖 Anthropic API Key</h3>
-    <p>Required for automatic PDF caption extraction. Your key is stored only in your browser — never in the code or on GitHub. Get your key at <strong>console.anthropic.com → API Keys</strong>.</p>
-    <div class="url-row">
+    <h3>🤖 Anthropic API Key (PDF Extraction)</h3>
+    <p>Required for automatic caption extraction from your Canva PDFs. Stored only in your browser — never uploaded anywhere. Get your key at <strong>console.anthropic.com → API Keys</strong>.</p>
+    <div class="field-row">
       <div>
         <label>API Key</label>
-        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-XXXXXXXX" oninput="onApiKeyInput()"/>
-        <p class="hint">Stored locally in your browser only. Never shared or uploaded anywhere.</p>
+        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-XXXXXXXX" oninput="document.getElementById('saveApiBtn').disabled=!this.value.trim()"/>
+        <p class="hint">Each team member enters this once. Stored locally in their browser only.</p>
       </div>
       <button class="btn btn-primary btn-sm" onclick="saveApiKey()" id="saveApiBtn" disabled>Save Key</button>
     </div>
-    <div id="apiKeyStatus" class="test-result"></div>
+    <div id="apiKeyMsg" class="result-msg"></div>
   </div>
 
   <div class="settings-box">
-    <h3>☁ Google Sheets Sync</h3>
-    <p>Connect the tool to Google Sheets so client profiles sync across your whole team. One-time setup — paste your Apps Script Web App URL below.</p>
+    <h3>☁ JSONBin Sync (Team Profiles)</h3>
+    <p>JSONBin stores your client profiles in the cloud so every team member sees the same data. Free account at <strong>jsonbin.io</strong>. Once set up, profiles sync instantly across your whole team.</p>
     <div class="setup-steps">
-      <div class="setup-step"><span class="s-dot">01</span><div class="s-text">Go to <strong>sheets.google.com</strong> → Create a blank spreadsheet → Name it <strong>"WB Media — Client Profiles"</strong> → Share with your team</div></div>
-      <div class="setup-step"><span class="s-dot">02</span><div class="s-text">Click <strong>Extensions → Apps Script</strong> → delete all code → paste the <strong>wb_apps_script.gs</strong> content → Save</div></div>
-      <div class="setup-step"><span class="s-dot">03</span><div class="s-text">Click <strong>Deploy → New Deployment</strong> → gear icon → <strong>Web App</strong> → Execute as: <strong>Me</strong> → Who has access: <strong>Anyone</strong> → Deploy → Authorise</div></div>
-      <div class="setup-step"><span class="s-dot">04</span><div class="s-text">Copy the <strong>Web App URL</strong> → paste below → Test Connection → Save &amp; Connect</div></div>
+      <div class="setup-step"><span class="s-dot">01</span><div class="s-text">Go to <strong>jsonbin.io</strong> → Sign up for a free account → verify your email</div></div>
+      <div class="setup-step"><span class="s-dot">02</span><div class="s-text">Click <strong>API Keys</strong> in the left sidebar → click <strong>Create Access Key</strong> → copy the key (starts with <code>$2b$</code>)</div></div>
+      <div class="setup-step"><span class="s-dot">03</span><div class="s-text">Paste the key below → click <strong>Connect &amp; Create Bin</strong> — this creates your team's shared storage automatically</div></div>
+      <div class="setup-step"><span class="s-dot">04</span><div class="s-text">Share the <strong>Bin ID</strong> that appears with your team — they paste it in their Settings to connect to the same shared data</div></div>
     </div>
-    <div class="url-row">
+    <div class="field-row">
       <div>
-        <label>Apps Script Web App URL</label>
-        <input type="url" id="scriptUrl" placeholder="https://script.google.com/macros/s/XXXXXXXXXX/exec" oninput="onUrlInput()"/>
+        <label>JSONBin API Key</label>
+        <input type="password" id="jsonbinKey" placeholder="$2b$10$XXXXXXXX" oninput="onJsonbinInput()"/>
       </div>
-      <button class="btn btn-ghost btn-sm" onclick="testConnection()" id="testBtn">Test</button>
-      <button class="btn btn-primary btn-sm" onclick="saveSettings()" id="saveSettingsBtn" disabled>Save &amp; Connect</button>
+      <button class="btn btn-ghost btn-sm" onclick="createBin()" id="createBinBtn" disabled>Connect &amp; Create Bin</button>
     </div>
-    <div id="testResult" class="test-result"></div>
+    <div style="margin-top:12px">
+      <label>Bin ID <span style="font-weight:400;text-transform:none;letter-spacing:0;color:var(--g400)">(share this with your team)</span></label>
+      <input type="text" id="binId" placeholder="Paste existing Bin ID here, or create new above"/>
+      <p class="hint">If your team already has a Bin ID, paste it here → Save. Everyone uses the same Bin ID with their own API key.</p>
+    </div>
+    <div style="margin-top:10px;display:flex;gap:8px">
+      <button class="btn btn-ghost btn-sm" onclick="testJsonbin()" id="testJsonbinBtn">Test Connection</button>
+      <button class="btn btn-primary btn-sm" onclick="saveJsonbinSettings()" id="saveJsonbinBtn">Save &amp; Connect</button>
+    </div>
+    <div id="jsonbinMsg" class="result-msg"></div>
   </div>
 
   <div class="settings-box">
     <h3>📐 Filename Convention</h3>
-    <p style="margin-bottom:0">Asset files in Dropbox should be named using this convention so URLs are built automatically:<br><br>
+    <p style="margin-bottom:0">Asset files in Dropbox must follow this naming pattern for URLs to build automatically:<br><br>
     <code>ClientPrefix_DD.MM.YY.ext</code><br><br>
-    Examples: <code>PiccoloMe_14.05.26.mp4</code> &nbsp;·&nbsp; <code>Doughkyo_21.05.26.jpg</code><br><br>
-    Videos (Reels) use <code>.mp4</code> — all other post types use <code>.jpg</code>. The prefix must match exactly what's entered in the client profile.</p>
+    Examples: &nbsp;<code>PiccoloMe_14.05.26.mp4</code> &nbsp;·&nbsp; <code>Doughkyo_21.05.26.jpg</code><br><br>
+    Reels/Videos → <code>.mp4</code> &nbsp;·&nbsp; All other types → <code>.jpg</code><br><br>
+    The prefix must match exactly what's saved in the client profile.</p>
   </div>
 
   <div class="settings-box">
     <h3>ℹ About</h3>
-    <p style="margin-bottom:0">Built for <strong>WB Media</strong> by Claude (Anthropic). Version 2.0<br>
-    PDF extraction · Auto URL building · Multi-platform · Social Pilot CSV · Team sync via Google Sheets<br><br>
-    Tool URL: <code>https://wbmedia-au.github.io/Scheduler</code> — bookmark and share with your team.</p>
+    <p style="margin-bottom:0">Built for <strong>WB Media</strong> by Claude (Anthropic). Version 3.0<br>
+    PDF extraction · Auto URL building · Multi-platform · Social Pilot CSV · Team sync via JSONBin<br><br>
+    Tool URL: <code>https://wbmedia-au.github.io/Scheduler</code></p>
   </div>
 </div>
 
-<!-- ══ MODAL ══════════════════════════════════════════════════════════════ -->
+<!-- MODAL -->
 <div class="modal-bg" id="modalBg">
   <div class="modal">
     <div class="modal-hdr">
@@ -334,7 +322,7 @@ td{padding:7px 12px;vertical-align:middle}
         <div class="ar-hdr"><span>Platform</span><span>Social Pilot Account ID</span><span></span></div>
         <div id="acctRows"></div>
         <button class="btn btn-ghost btn-sm mt" onclick="addAcctRow('','')">+ Add Platform</button>
-        <p class="hint" style="margin-top:8px">Find Account IDs: Social Pilot → <strong>Accounts → Manage Account</strong> → click account → copy number from the URL.</p>
+        <p class="hint" style="margin-top:8px">Find Account IDs: Social Pilot → <strong>Accounts → Manage Account</strong> → click account → copy number from the URL bar.</p>
       </div>
     </div>
     <div class="modal-foot">
@@ -345,12 +333,14 @@ td{padding:7px 12px;vertical-align:middle}
 </div>
 
 <script>
-// ─── CONFIG ────────────────────────────────────────────────────────────────────
-const CACHE_KEY  = 'wb_clients_v3';
-const SCRIPT_KEY = 'wb_script_url';
-const APIKEY_KEY = 'wb_api_key';
-const PLATFORMS  = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
-const TYPE_EXT   = {
+// ─── KEYS & CONFIG ────────────────────────────────────────────────────────────
+const CACHE_KEY      = 'wb_clients_v4';
+const APIKEY_KEY     = 'wb_anthropic_key';
+const JSONBIN_KEY    = 'wb_jsonbin_key';
+const BINID_KEY      = 'wb_bin_id';
+const JSONBIN_BASE   = 'https://api.jsonbin.io/v3';
+const PLATFORMS      = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
+const TYPE_EXT       = {
   'CAROUSEL':'jpg','PHOTO':'jpg','GRAPHIC':'jpg','STORY':'jpg',
   'REEL':'mp4','VIDEO':'mp4','REEL/VIDEO':'mp4','REEL / VIDEO':'mp4'
 };
@@ -359,8 +349,9 @@ const TYPE_EXT   = {
 let clients   = [];
 let posts     = [];
 let editingId = null;
-let scriptUrl = localStorage.getItem(SCRIPT_KEY) || '';
 let apiKey    = localStorage.getItem(APIKEY_KEY)  || '';
+let jbKey     = localStorage.getItem(JSONBIN_KEY) || '';
+let binId     = localStorage.getItem(BINID_KEY)   || '';
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
@@ -371,109 +362,118 @@ function setSyncPill(type, msg){
   el.textContent = msg;
 }
 
-// ─── SETTINGS ──────────────────────────────────────────────────────────────────
-function onApiKeyInput(){
-  document.getElementById('saveApiBtn').disabled = !document.getElementById('apiKeyInput').value.trim();
+// ─── JSONBIN ──────────────────────────────────────────────────────────────────
+function onJsonbinInput(){
+  document.getElementById('createBinBtn').disabled = !document.getElementById('jsonbinKey').value.trim();
 }
 
-function saveApiKey(){
-  const key = document.getElementById('apiKeyInput').value.trim();
+async function createBin(){
+  const key = document.getElementById('jsonbinKey').value.trim();
   if (!key) return;
-  apiKey = key;
-  localStorage.setItem(APIKEY_KEY, key);
-  const el = document.getElementById('apiKeyStatus');
-  el.className = 'test-result ok';
-  el.textContent = '✓ API key saved. PDF extraction is now enabled.';
-}
-
-function onUrlInput(){
-  document.getElementById('saveSettingsBtn').disabled = !document.getElementById('scriptUrl').value.trim();
-}
-
-async function testConnection(){
-  const url = document.getElementById('scriptUrl').value.trim();
-  if (!url){ showTestResult(false,'Please enter the Web App URL first.'); return; }
-  const btn = document.getElementById('testBtn');
-  btn.textContent = '…'; btn.disabled = true;
+  showJsonbinMsg(false,'Creating bin…');
   try {
-    const res  = await fetch(url, {mode:'cors'});
+    const res = await fetch(`${JSONBIN_BASE}/b`, {
+      method : 'POST',
+      headers: {
+        'Content-Type'  : 'application/json',
+        'X-Master-Key'  : key,
+        'X-Bin-Name'    : 'WB Media Client Profiles',
+        'X-Bin-Private' : 'true'
+      },
+      body: JSON.stringify({ version:1, clients:[] })
+    });
     const data = await res.json();
-    if (data.ok !== undefined){
-      showTestResult(true, `✓ Connected! Found ${(data.clients||[]).length} client profiles.`);
-      document.getElementById('saveSettingsBtn').disabled = false;
-    } else {
-      showTestResult(false,'Connected but unexpected response. Check the script deployment.');
-    }
+    if (!res.ok) throw new Error(data.message || 'Create failed');
+    const id = data.metadata.id;
+    document.getElementById('binId').value = id;
+    jbKey = key; binId = id;
+    localStorage.setItem(JSONBIN_KEY, key);
+    localStorage.setItem(BINID_KEY, id);
+    showJsonbinMsg(true, `✓ Bin created! Bin ID: ${id} — share this ID with your team.`);
   } catch(e){
-    showTestResult(false,'Could not connect. Make sure "Who has access" is set to "Anyone" in the deployment.');
+    showJsonbinMsg(false, `Error: ${e.message}`);
   }
-  btn.textContent = 'Test'; btn.disabled = false;
 }
 
-function showTestResult(ok, msg){
-  const el = document.getElementById('testResult');
-  el.className = 'test-result ' + (ok ? 'ok' : 'fail');
+async function testJsonbin(){
+  const key = document.getElementById('jsonbinKey').value.trim() || jbKey;
+  const id  = document.getElementById('binId').value.trim() || binId;
+  if (!key || !id){ showJsonbinMsg(false,'Enter your API key and Bin ID first.'); return; }
+  try {
+    const res  = await fetch(`${JSONBIN_BASE}/b/${id}/latest`, {
+      headers: { 'X-Master-Key': key }
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.message || 'Failed');
+    const count = (data.record?.clients||[]).length;
+    showJsonbinMsg(true, `✓ Connected! Found ${count} client profile${count!==1?'s':''}.`);
+  } catch(e){
+    showJsonbinMsg(false, `Could not connect: ${e.message}`);
+  }
+}
+
+function saveJsonbinSettings(){
+  const key = document.getElementById('jsonbinKey').value.trim() || jbKey;
+  const id  = document.getElementById('binId').value.trim();
+  if (!key || !id){ showJsonbinMsg(false,'Both API key and Bin ID are required.'); return; }
+  jbKey = key; binId = id;
+  localStorage.setItem(JSONBIN_KEY, key);
+  localStorage.setItem(BINID_KEY, id);
+  showJsonbinMsg(true,'✓ Settings saved. Loading profiles…');
+  loadProfiles();
+  setTimeout(()=>switchView('clients'), 800);
+}
+
+function showJsonbinMsg(ok, msg){
+  const el = document.getElementById('jsonbinMsg');
+  el.className = 'result-msg ' + (ok?'ok':'fail');
   el.textContent = msg;
 }
 
-function saveSettings(){
-  const url = document.getElementById('scriptUrl').value.trim();
-  if (!url) return;
-  scriptUrl = url;
-  localStorage.setItem(SCRIPT_KEY, url);
-  setSyncPill('busy','⟳ Connecting…');
-  loadProfiles();
-  switchView('clients');
-}
-
-// ─── LOAD PROFILES ─────────────────────────────────────────────────────────────
+// ─── LOAD/SAVE PROFILES ────────────────────────────────────────────────────────
 async function loadProfiles(){
-  if (!scriptUrl){
+  if (!jbKey || !binId){
     setSyncPill('err','⚠ Not connected');
     const cached = getCached();
-    if (cached.length){ clients = cached; populateClientDropdown(); renderClientGrid(); }
-    else {
-      document.getElementById('clientGrid').innerHTML =
-        '<div class="empty" style="grid-column:1/-1"><div class="ei">⚙️</div><p>Go to <strong>Settings</strong> to connect Google Sheets sync</p></div>';
-    }
+    if (cached.length){ clients = cached; }
+    populateClientDropdown(); renderClientGrid();
     return;
   }
   setSyncPill('busy','⟳ Loading…');
   try {
-    const res  = await fetch(scriptUrl + '?t=' + Date.now(), {mode:'cors'});
+    const res  = await fetch(`${JSONBIN_BASE}/b/${binId}/latest`, {
+      headers: { 'X-Master-Key': jbKey }
+    });
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error || 'Error');
-    clients = data.clients || [];
+    if (!res.ok) throw new Error(data.message||'Failed');
+    clients = data.record?.clients || [];
     setCached(clients);
     setSyncPill('ok','☁ Synced');
     populateClientDropdown();
     renderClientGrid();
   } catch(e){
     const cached = getCached();
-    if (cached.length){
-      clients = cached;
-      setSyncPill('err','⚠ Offline — cached');
-    } else {
-      setSyncPill('err','⚠ Could not load');
-    }
-    populateClientDropdown();
-    renderClientGrid();
+    if (cached.length){ clients = cached; setSyncPill('err','⚠ Offline — cached'); }
+    else { setSyncPill('err','⚠ Not connected'); }
+    populateClientDropdown(); renderClientGrid();
   }
 }
 
-// ─── SAVE PROFILES ─────────────────────────────────────────────────────────────
 async function saveProfiles(){
   setCached(clients);
-  if (!scriptUrl){ setSyncPill('err','⚠ Saved locally — not synced'); return; }
+  if (!jbKey || !binId){ setSyncPill('err','⚠ Saved locally — go to Settings to connect'); return; }
   setSyncPill('busy','⟳ Saving…');
   try {
-    const res = await fetch(scriptUrl, {
-      method:'POST', mode:'cors',
-      headers:{'Content-Type':'application/json'},
-      body: JSON.stringify({ action:'save_all', clients })
+    const res = await fetch(`${JSONBIN_BASE}/b/${binId}`, {
+      method : 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Master-Key': jbKey
+      },
+      body: JSON.stringify({ version:1, clients })
     });
     const data = await res.json();
-    if (!data.ok) throw new Error(data.error);
+    if (!res.ok) throw new Error(data.message||'Failed');
     setSyncPill('ok','☁ Saved');
   } catch(e){
     setSyncPill('err','⚠ Saved locally — sync failed');
@@ -483,6 +483,17 @@ async function saveProfiles(){
 function getCached(){ try{ return JSON.parse(localStorage.getItem(CACHE_KEY)||'[]'); }catch(e){ return []; } }
 function setCached(d){ localStorage.setItem(CACHE_KEY, JSON.stringify(d)); }
 
+// ─── ANTHROPIC API KEY ─────────────────────────────────────────────────────────
+function saveApiKey(){
+  const key = document.getElementById('apiKeyInput').value.trim();
+  if (!key) return;
+  apiKey = key;
+  localStorage.setItem(APIKEY_KEY, key);
+  const el = document.getElementById('apiKeyMsg');
+  el.className = 'result-msg ok';
+  el.textContent = '✓ API key saved. PDF extraction is now enabled.';
+}
+
 // ─── VIEWS ─────────────────────────────────────────────────────────────────────
 function switchView(v){
   document.querySelectorAll('.view').forEach(el => el.classList.remove('active'));
@@ -490,9 +501,10 @@ function switchView(v){
   document.getElementById('view-'+v).classList.add('active');
   document.getElementById('tab-'+v).classList.add('active');
   if (v === 'settings'){
-    document.getElementById('scriptUrl').value = scriptUrl;
-    document.getElementById('saveSettingsBtn').disabled = !scriptUrl;
     if (apiKey) document.getElementById('apiKeyInput').value = apiKey;
+    if (jbKey)  document.getElementById('jsonbinKey').value  = jbKey;
+    if (binId)  document.getElementById('binId').value       = binId;
+    document.getElementById('createBinBtn').disabled = !jbKey && !document.getElementById('jsonbinKey').value;
   }
 }
 
@@ -511,46 +523,36 @@ function populateClientDropdown(){
 }
 
 function onClientSelect(){
-  const id = document.getElementById('sel-client').value;
-  const c  = clients.find(x => x.id === id);
-  const checksDiv = document.getElementById('platformChecks');
-  checksDiv.innerHTML = '';
+  const id  = document.getElementById('sel-client').value;
+  const c   = clients.find(x => x.id === id);
+  const div = document.getElementById('platChecks');
+  div.innerHTML = '';
   document.getElementById('sel-summary').innerHTML = '';
+  if (!c){ div.innerHTML = '<div style="font-size:12px;color:var(--g400)">Select a client first</div>'; return; }
 
-  if (!c){
-    checksDiv.innerHTML = '<div style="font-size:12px;color:var(--g400)">Select a client first</div>';
-    return;
-  }
-
-  // Render platform checkboxes
   (c.accounts||[]).forEach((a,i) => {
-    const label = document.createElement('label');
-    label.className = 'plat-check' + (i===0?' selected':'');
-    label.dataset.accountId = a.accountId || '';
-    label.dataset.platform  = a.platform;
-    label.innerHTML = `<input type="checkbox" ${i===0?'checked':''}> ${a.platform}${a.accountId?'':' <span style="color:#e65100;font-size:10px">(no ID)</span>'}`;
-    label.addEventListener('click', function(e){
+    const lbl = document.createElement('label');
+    lbl.className = 'plat-check' + (i===0?' on':'');
+    lbl.dataset.accountId = a.accountId||'';
+    lbl.dataset.platform  = a.platform;
+    lbl.innerHTML = `<input type="checkbox" ${i===0?'checked':''}>${a.platform}`;
+    lbl.addEventListener('click', function(e){
       e.preventDefault();
-      this.classList.toggle('selected');
-      const cb = this.querySelector('input');
-      cb.checked = !cb.checked;
+      this.classList.toggle('on');
+      this.querySelector('input').checked = this.classList.contains('on');
     });
-    checksDiv.appendChild(label);
+    div.appendChild(lbl);
   });
 
   if (c.defaultTime) document.getElementById('defaultTime').value = c.defaultTime;
-
   document.getElementById('sel-summary').innerHTML =
     `<span style="color:var(--black);font-weight:600">${escHtml(c.name)}</span> &nbsp;·&nbsp; `+
-    (c.dropboxPrefix
-      ? `Prefix: <code>${escHtml(c.dropboxPrefix)}</code>`
-      : '<span style="color:#e65100">⚠ No filename prefix set in profile</span>');
-
+    (c.dropboxPrefix ? `Prefix: <code>${escHtml(c.dropboxPrefix)}</code>` : '<span style="color:#e65100">⚠ No prefix set</span>');
   rebuildAllUrls();
 }
 
 function getSelectedAccounts(){
-  return Array.from(document.querySelectorAll('.plat-check.selected')).map(el => ({
+  return Array.from(document.querySelectorAll('.plat-check.on')).map(el => ({
     platform  : el.dataset.platform,
     accountId : el.dataset.accountId
   }));
@@ -575,33 +577,37 @@ zone.addEventListener('drop', e => {
 
 // ─── PDF EXTRACTION ────────────────────────────────────────────────────────────
 async function extractPosts(base64, filename){
-  const prompt = `Parse this WB Media Canva content calendar PDF. Each slide has:
+  const prompt = `Parse this WB Media Canva content calendar PDF. Each post slide has:
 - POST label (WEEK X: POST XX)
 - DATE: DD.MM.YY
 - POST TYPE: CAROUSEL / REEL / VIDEO / PHOTO / GRAPHIC / STORY
 - CAPTION: full text with emojis and hashtags
 
-Return ONLY valid JSON, no markdown:
-{"client":"<brand name no spaces>","posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags"}]}
+Return ONLY valid JSON, no markdown, no preamble:
+{"client":"<brand name no spaces>","posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption text including all emojis and hashtags"}]}
 
-Rules: complete captions with all emojis and hashtags. Exclude non-post slides (cover, grid preview, feedback).`;
+Important: include complete captions with ALL emojis and hashtags. Skip non-post slides (cover page, grid view, feedback slides).`;
+
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{
-        'Content-Type':'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version':'2023-06-01',
-        'anthropic-dangerous-direct-browser-access':'true'
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method : 'POST',
+      headers: {
+        'Content-Type'                            : 'application/json',
+        'x-api-key'                               : apiKey,
+        'anthropic-version'                       : '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
       },
-      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:4000,
-        messages:[{ role:'user', content:[
+      body: JSON.stringify({
+        model      : 'claude-sonnet-4-20250514',
+        max_tokens : 4000,
+        messages   : [{ role:'user', content:[
           { type:'document', source:{ type:'base64', media_type:'application/pdf', data:base64 }},
           { type:'text', text:prompt }
-        ]}]})
+        ]}]
+      })
     });
     const data = await res.json();
-    if (!res.ok) throw new Error(data.error?.message || 'API error');
+    if (!res.ok) throw new Error(data.error?.message || `API error ${res.status}`);
     const text   = data.content.map(b => b.text||'').join('').trim();
     const parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
     posts = parsed.posts || [];
@@ -611,18 +617,21 @@ Rules: complete captions with all emojis and hashtags. Exclude non-post slides (
     updateCount();
   } catch(err){
     console.error(err);
-    showStatus('error', err.message.includes('401')
-      ? 'Invalid API key — check your key in Settings.'
-      : 'Could not parse PDF. Make sure it is a WB Media content calendar.');
+    const msg = err.message.includes('401') || err.message.includes('403')
+      ? 'Invalid API key — check your Anthropic key in Settings.'
+      : err.message.includes('fetch')
+      ? 'Network error — check your internet connection.'
+      : 'Could not parse PDF. Make sure it is a WB Media content calendar.';
+    showStatus('error', msg);
   }
 }
 
 // ─── URL BUILDING ──────────────────────────────────────────────────────────────
-function getExt(t){ return TYPE_EXT[t?.toUpperCase()] || TYPE_EXT[t] || 'jpg'; }
+function getExt(t){ return TYPE_EXT[t?.toUpperCase()]||TYPE_EXT[t]||'jpg'; }
 
 function buildUrl(post){
   const c = clients.find(x => x.id === document.getElementById('sel-client').value);
-  if (!c || !c.dropboxFolder || !c.dropboxPrefix) return null;
+  if (!c||!c.dropboxFolder||!c.dropboxPrefix) return null;
   const base = c.dropboxFolder.split('?')[0].replace(/\/+$/,'');
   return `${base}/${c.dropboxPrefix}_${post.date}.${getExt(post.post_type)}?dl=1`;
 }
@@ -635,16 +644,16 @@ function rebuildAllUrls(){
 function fixDropbox(url){
   if (!url) return url;
   url = url.replace(/[?&]dl=0/, m => m.replace('dl=0','dl=1'));
-  if (url.includes('dropbox.com') && !url.includes('dl=')) url += (url.includes('?')?'&':'?')+'dl=1';
+  if (url.includes('dropbox.com')&&!url.includes('dl=')) url += (url.includes('?')?'&':'?')+'dl=1';
   return url;
 }
 
 function renderUrlCell(cell, post, i){
-  const override = post.manualUrl || '';
+  const ov = post.manualUrl||'';
   let tag, urlHtml;
-  if (override){
+  if (ov){
     tag     = '<span class="badge b-blue" style="display:inline-block;margin-bottom:4px">Manual Override</span>';
-    urlHtml = `<div style="font-size:11px;font-family:monospace;color:#1565c0;word-break:break-all;line-height:1.4">${escHtml(override)}</div>`;
+    urlHtml = `<div style="font-size:11px;font-family:monospace;color:#1565c0;word-break:break-all;line-height:1.4">${escHtml(ov)}</div>`;
   } else if (post.autoUrl){
     tag     = '<span class="badge b-green" style="display:inline-block;margin-bottom:4px">Auto ✓</span>';
     urlHtml = `<div style="font-size:11px;font-family:monospace;color:var(--green);word-break:break-all;line-height:1.4">${escHtml(post.autoUrl)}</div>`;
@@ -652,17 +661,14 @@ function renderUrlCell(cell, post, i){
     tag     = '<span class="badge b-orange" style="display:inline-block;margin-bottom:4px">Needs Setup</span>';
     urlHtml = '<div style="font-size:11px;color:var(--g400)">Add Dropbox folder in client profile</div>';
   }
-  cell.innerHTML = `<div>${tag}${urlHtml}
-    <input class="tbl-input" style="margin-top:5px;font-family:monospace;font-size:11px"
-      id="ov-${i}" placeholder="Paste URL to override…" value="${escHtml(override)}"
-      oninput="onOverride(${i},this.value)"/></div>`;
+  cell.innerHTML = `<div>${tag}${urlHtml}<input class="tbl-input" style="margin-top:5px;font-family:monospace;font-size:11px" id="ov-${i}" placeholder="Paste URL to override…" value="${escHtml(ov)}" oninput="onOverride(${i},this.value)"/></div>`;
 }
 
 function onOverride(i, val){
   const fixed = fixDropbox(val.trim());
-  posts[i].manualUrl = fixed || null;
+  posts[i].manualUrl = fixed||null;
   const el = document.getElementById(`ov-${i}`);
-  if (el && fixed !== val) el.value = fixed;
+  if (el&&fixed!==val) el.value = fixed;
   renderUrlCell(document.getElementById(`uc-${i}`), posts[i], i);
 }
 
@@ -671,10 +677,10 @@ function renderTable(){
   const tbody = document.getElementById('postsBody');
   tbody.innerHTML = '';
   if (!posts.length){
-    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Upload a Canva PDF above to auto-populate posts</p></div></td></tr>';
+    tbody.innerHTML = '<tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Upload a Canva PDF above</p></div></td></tr>';
     return;
   }
-  const t = document.getElementById('defaultTime').value || '09:00';
+  const t = document.getElementById('defaultTime').value||'09:00';
   posts.forEach((p,i) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -694,20 +700,17 @@ function renderTable(){
 function generateCSV(){
   if (!posts.length) return;
   const accounts = getSelectedAccounts();
-  if (!accounts.length){ alert('Please select at least one platform to post to.'); return; }
-
-  // Generate one row per post per selected platform
+  if (!accounts.length){ alert('Please select at least one platform.'); return; }
   const rows = [];
   posts.forEach((p,i) => {
-    const url = p.manualUrl || p.autoUrl || '';
-    const t   = document.getElementById(`time-${i}`)?.value || '09:00';
+    const url = p.manualUrl||p.autoUrl||'';
+    const t   = document.getElementById(`time-${i}`)?.value||'09:00';
     const dt  = fmtDateCSV(p.date, t);
     const cap = p.caption.replace(/"/g,'""');
     accounts.forEach(a => {
       rows.push(`"${cap}","${url}","${dt}","${a.accountId}","","${a.platform}"`);
     });
   });
-
   const blob = new Blob([rows.join('\n')], {type:'text/csv;charset=utf-8;'});
   const url  = URL.createObjectURL(blob);
   const a    = document.createElement('a');
@@ -727,8 +730,8 @@ function renderClientGrid(){
   if (!clients.length){
     const empty = document.createElement('div');
     empty.className = 'empty'; empty.style.gridColumn = '1/-1';
-    empty.innerHTML = !scriptUrl
-      ? '<div class="ei">⚙️</div><p>Go to <strong>Settings</strong> to connect Google Sheets sync first</p>'
+    empty.innerHTML = (!jbKey||!binId)
+      ? '<div class="ei">⚙️</div><p>Go to <strong>Settings</strong> to connect JSONBin sync first</p>'
       : '<div class="ei">👥</div><p>No clients yet — add your first client</p>';
     grid.appendChild(empty);
     return;
@@ -738,12 +741,12 @@ function renderClientGrid(){
     div.className = 'client-card';
     const badges = (c.accounts||[]).map(a =>
       `<span class="badge b-grey" style="margin-right:3px">${escHtml(a.platform)}${a.accountId?' ✓':''}</span>`
-    ).join('') || '<span style="color:var(--g400)">None set</span>';
+    ).join('')||'<span style="color:var(--g400)">None</span>';
     div.innerHTML = `
       <div class="cc-name">${escHtml(c.name)}</div>
       <div class="cc-meta">
         Prefix: <code>${escHtml(c.dropboxPrefix||'—')}</code><br>
-        Dropbox: ${c.dropboxFolder ? '<span style="color:var(--green)">✓ Set</span>' : '<span style="color:#e65100">⚠ Not set</span>'}<br>
+        Dropbox: ${c.dropboxFolder?'<span style="color:var(--green)">✓ Set</span>':'<span style="color:#e65100">⚠ Not set</span>'}<br>
         Platforms: ${badges}
       </div>
       <div class="cc-actions">
@@ -761,38 +764,37 @@ function renderClientGrid(){
 
 // ─── MODAL ─────────────────────────────────────────────────────────────────────
 function openModal(id){
-  editingId = id || null;
+  editingId = id||null;
   const c   = id ? clients.find(x => x.id === id) : null;
   document.getElementById('modalTitle').textContent = c ? 'Edit Client Profile' : 'Add Client Profile';
-  document.getElementById('m-name').value    = c?.name || '';
-  document.getElementById('m-prefix').value  = c?.dropboxPrefix || '';
-  document.getElementById('m-dropbox').value = c?.dropboxFolder || '';
-  document.getElementById('m-time').value    = c?.defaultTime || '09:00';
+  document.getElementById('m-name').value    = c?.name||'';
+  document.getElementById('m-prefix').value  = c?.dropboxPrefix||'';
+  document.getElementById('m-dropbox').value = c?.dropboxFolder||'';
+  document.getElementById('m-time').value    = c?.defaultTime||'09:00';
   document.getElementById('acctRows').innerHTML = '';
-  const accounts = c?.accounts?.length ? c.accounts : [{platform:'Instagram',accountId:''},{platform:'Facebook',accountId:''}];
-  accounts.forEach(a => addAcctRow(a.platform, a.accountId));
+  const accts = c?.accounts?.length ? c.accounts : [{platform:'Instagram',accountId:''},{platform:'Facebook',accountId:''}];
+  accts.forEach(a => addAcctRow(a.platform, a.accountId));
   document.getElementById('modalBg').classList.add('open');
 }
 
 function closeModal(){ document.getElementById('modalBg').classList.remove('open'); editingId = null; }
 
 function addAcctRow(platform='', accountId=''){
-  const container = document.getElementById('acctRows');
-  const div = document.createElement('div');
+  const div  = document.createElement('div');
   div.className = 'ar';
   const opts = PLATFORMS.map(p => `<option${platform===p?' selected':''}>${p}</option>`).join('');
   div.innerHTML = `
     <select class="tbl-input acct-p"><option value="">Select…</option>${opts}</select>
     <input class="tbl-input acct-id" type="text" placeholder="Account ID e.g. 12345678" value="${escHtml(accountId)}"/>
     <button class="btn btn-danger btn-xs" onclick="this.parentElement.remove()" style="padding:4px 8px">✕</button>`;
-  container.appendChild(div);
+  document.getElementById('acctRows').appendChild(div);
 }
 
 async function saveClient(){
-  const name          = document.getElementById('m-name').value.trim();
-  const prefix        = document.getElementById('m-prefix').value.trim();
-  const dropboxFolder = document.getElementById('m-dropbox').value.trim().split('?')[0];
-  const defaultTime   = document.getElementById('m-time').value;
+  const name   = document.getElementById('m-name').value.trim();
+  const prefix = document.getElementById('m-prefix').value.trim();
+  const folder = document.getElementById('m-dropbox').value.trim().split('?')[0];
+  const time   = document.getElementById('m-time').value;
   if (!name){ alert('Client name is required'); return; }
   const accounts = [];
   document.querySelectorAll('.ar').forEach(row => {
@@ -800,13 +802,11 @@ async function saveClient(){
     const id = row.querySelector('.acct-id').value.trim();
     if (p) accounts.push({platform:p, accountId:id});
   });
-  const client = { id: editingId || uid(), name, dropboxPrefix:prefix, dropboxFolder, defaultTime, accounts };
+  const client = { id:editingId||uid(), name, dropboxPrefix:prefix, dropboxFolder:folder, defaultTime:time, accounts };
   if (editingId){
     const idx = clients.findIndex(x => x.id === editingId);
     if (idx > -1) clients[idx] = client; else clients.push(client);
-  } else {
-    clients.push(client);
-  }
+  } else { clients.push(client); }
   closeModal();
   renderClientGrid();
   populateClientDropdown();
@@ -814,23 +814,22 @@ async function saveClient(){
 }
 
 async function deleteClient(id){
-  if (!confirm('Delete this client? This will update for your whole team.')) return;
+  if (!confirm('Delete this client? This updates for your whole team.')) return;
   clients = clients.filter(x => x.id !== id);
-  renderClientGrid();
-  populateClientDropdown();
+  renderClientGrid(); populateClientDropdown();
   await saveProfiles();
 }
 
 // ─── HELPERS ───────────────────────────────────────────────────────────────────
 function fmtDateDisp(d){
   const p = d.split('.');
-  if (p.length !== 3) return d;
+  if (p.length!==3) return d;
   const m = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   return `${parseInt(p[0])} ${m[parseInt(p[1])-1]} 20${p[2]}`;
 }
 function fmtDateCSV(d,t){
   const p = d.split('.');
-  if (p.length !== 3) return d+' '+t;
+  if (p.length!==3) return d+' '+t;
   return `20${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')} ${t||'09:00'}`;
 }
 function showStatus(type, msg){
