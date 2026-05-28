@@ -170,15 +170,15 @@ td{padding:7px 12px;vertical-align:middle}
         <strong>Step B:</strong> Paste the JSON into the field below → click Load Posts.</p>
       </div>
 
-      <div style="background:var(--black);border-radius:4px;padding:14px 16px;margin-bottom:16px;position:relative">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g400);margin-bottom:8px">Claude Prompt — copy and paste into claude.ai with your PDF</div>
-        <div style="font-size:12px;color:#e0e0e0;line-height:1.7;font-family:monospace" id="promptText">Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
+      <div style="background:var(--black);border-radius:4px;padding:14px 16px;margin-bottom:16px">
+        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g400);margin-bottom:8px">Claude Prompt — copy and paste into claude.ai with your PDF attached</div>
+        <textarea id="promptText" readonly rows="7" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;color:#e0e0e0;line-height:1.7;font-family:monospace;resize:none;cursor:text">Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
 
 {"posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags"}]}
 
-Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags.</div>
-        <button class="btn btn-ghost btn-sm" onclick="copyPrompt()" style="margin-top:12px;border-color:#444;color:#aaa">Copy Prompt</button>
-        <div id="copyMsg" style="display:none;font-size:11px;color:#81c784;margin-top:6px">✓ Copied!</div>
+Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. Return only the JSON — no explanation before or after.</textarea>
+        <button class="btn btn-ghost btn-sm" onclick="copyPrompt()" style="margin-top:10px;border-color:#444;color:#aaa">📋 Copy Prompt</button>
+        <div id="copyMsg" style="display:none;font-size:11px;color:#81c784;margin-top:6px">✓ Copied to clipboard!</div>
       </div>
 
       <div>
@@ -565,8 +565,9 @@ function getSelectedAccounts(){
 
 // ─── COPY PROMPT ──────────────────────────────────────────────────────────────
 function copyPrompt(){
-  const text = document.getElementById('promptText').innerText;
-  navigator.clipboard.writeText(text).then(() => {
+  const el = document.getElementById('promptText');
+  el.select();
+  navigator.clipboard.writeText(el.value).then(() => {
     const msg = document.getElementById('copyMsg');
     msg.style.display = 'block';
     setTimeout(() => msg.style.display = 'none', 2000);
@@ -579,7 +580,10 @@ function loadFromJSON(){
   const loadMsg = document.getElementById('loadMsg');
   if (!raw){ loadMsg.style.color='#c62828'; loadMsg.textContent='Please paste the JSON from Claude first.'; return; }
   try {
-    const clean  = raw.replace(/```json|```/g,'').trim();
+    // Auto-clean: extract just the JSON object even if Claude added extra text
+    const jsonMatch = raw.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found');
+    const clean  = jsonMatch[0];
     const parsed = JSON.parse(clean);
     posts = parsed.posts || [];
     if (!posts.length) throw new Error('No posts found');
@@ -591,7 +595,7 @@ function loadFromJSON(){
     document.getElementById('jsonPaste').value = '';
   } catch(e){
     loadMsg.style.color = '#c62828';
-    loadMsg.textContent = 'Invalid JSON — make sure you copied the full response from Claude.';
+    loadMsg.textContent = 'Could not read the data — try copying again from Claude, or paste only the JSON part starting with {';
   }
 }
 
