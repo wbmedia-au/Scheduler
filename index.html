@@ -339,6 +339,9 @@ const CACHE_KEY    = 'wb_clients_v5';
 const JBKEY_LOCAL  = 'wb_jbkey';
 const BINID_LOCAL  = 'wb_binid';
 const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
+// Default credentials — staff get these automatically, no setup needed
+const DEFAULT_BIN_ID = '6a17a694ddf5aa59f76e418a';
+const DEFAULT_JB_KEY = '$2a$10$Qy/YDcwxT/LqljVC4.KscOnSECFKbW4ZoNjUCW.XInZCiR.XqoETG';
 const PLATFORMS    = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
 const TYPE_EXT     = {
   'CAROUSEL':'jpg','PHOTO':'jpg','GRAPHIC':'jpg','STORY':'jpg',
@@ -349,9 +352,10 @@ const TYPE_EXT     = {
 let clients   = [];
 let posts     = [];
 let editingId = null;
-let apiKey    = '';   // loaded from JSONBin record
-let jbKey     = localStorage.getItem(JBKEY_LOCAL) || '';
-let binId     = localStorage.getItem(BINID_LOCAL) || '';
+let apiKey    = '';
+// Use locally saved credentials if available, otherwise fall back to defaults
+let jbKey     = localStorage.getItem(JBKEY_LOCAL) || DEFAULT_JB_KEY;
+let binId     = localStorage.getItem(BINID_LOCAL) || DEFAULT_BIN_ID;
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
@@ -431,7 +435,7 @@ async function loadProfiles(){
     setSyncPill('err','⚠ Not set up');
     const cached = getCached();
     if (cached.length){ clients = cached; populateClientDropdown(); renderClientGrid(); }
-    else { document.getElementById('clientGrid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="ei">⚙️</div><p>Contact your team admin to get set up</p></div>'; }
+    else { document.getElementById('clientGrid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="ei">⟳</div><p>Loading profiles…</p></div>'; }
     return;
   }
   setSyncPill('busy','⟳ Loading…');
