@@ -162,16 +162,18 @@ td{padding:7px 12px;vertical-align:middle}
     <div class="step-header"><span class="step-num">Step 02</span><span class="step-title">Extract &amp; Paste Post Data</span></div>
     <div class="step-body">
       <div class="instr">
-        <p><strong>Step A:</strong> Open Claude at <a href="https://claude.ai" target="_blank" style="color:var(--red)">claude.ai</a> → upload your approved Canva PDF → paste the prompt below → copy the JSON it returns.<br>
-        <strong>Step B:</strong> Paste the JSON into the field below → click Load Posts.</p>
+        <p><strong>Step A:</strong> Open Claude at <a href="https://claude.ai" target="_blank" style="color:var(--red)">claude.ai</a> → upload your approved Canva PDF → paste the prompt below → when Claude responds, click the <strong>copy button</strong> on the code block it returns.<br>
+        <strong>Step B:</strong> Paste the copied data into the field below → click Load Posts.</p>
       </div>
       <div style="background:var(--black);border-radius:4px;padding:14px 16px;margin-bottom:16px">
         <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g400);margin-bottom:8px">Claude Prompt — copy and paste into claude.ai with your PDF attached</div>
-        <textarea id="promptText" readonly rows="9" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;color:#e0e0e0;line-height:1.7;font-family:monospace;resize:none;cursor:text">Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
+        <textarea id="promptText" readonly rows="9" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;color:#e0e0e0;line-height:1.7;font-family:monospace;resize:none;cursor:text">Please extract all posts from this WB Media content calendar PDF and return the data in the JSON format shown below. Wrap your response in a ```json code block so I can copy it easily — no other text before or after.
 
+```json
 {"posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags","dropbox_url":"https://www.dropbox.com/..."}]}
+```
 
-Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "". Return only the JSON — no explanation before or after.</textarea>
+Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "".</textarea>
         <button class="btn btn-ghost btn-sm" onclick="copyPrompt()" style="margin-top:10px;border-color:#444;color:#aaa">📋 Copy Prompt</button>
         <div id="copyMsg" style="display:none;font-size:11px;color:#81c784;margin-top:6px">✓ Copied to clipboard!</div>
       </div>
