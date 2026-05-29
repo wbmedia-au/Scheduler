@@ -345,7 +345,9 @@ const DEFAULT_JB_KEY = '$2a$10$Qy/YDcwxT/LqljVC4.KscOnSECFKbW4ZoNjUCW.XInZCiR.Xq
 const PLATFORMS    = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
 const TYPE_EXT     = {
   'CAROUSEL':'jpg','PHOTO':'jpg','GRAPHIC':'jpg','STORY':'jpg',
-  'REEL':'mp4','VIDEO':'mp4','REEL/VIDEO':'mp4','REEL / VIDEO':'mp4'
+  'PHOTO/CAROUSEL':'jpg','CAROUSEL/PHOTO':'jpg',
+  'REEL':'mp4','VIDEO':'mp4','REEL/VIDEO':'mp4','REEL / VIDEO':'mp4',
+  'REEL/VIDEO':'mp4','VIDEO/REEL':'mp4'
 };
 
 // ─── STATE ─────────────────────────────────────────────────────────────────────
@@ -544,36 +546,48 @@ function copyPrompt(){
 
 // ─── LOAD FROM JSON PASTE ─────────────────────────────────────────────────────
 function loadFromJSON(){
-  const raw=document.getElementById('jsonPaste').value.trim();
-  const loadMsg=document.getElementById('loadMsg');
+  const raw     = document.getElementById('jsonPaste').value.trim();
+  const loadMsg = document.getElementById('loadMsg');
   if (!raw){ loadMsg.style.color='#c62828'; loadMsg.textContent='Please paste the JSON from Claude first.'; return; }
   try {
-    const jsonMatch=raw.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON');
-    const parsed=JSON.parse(jsonMatch[0]);
-    posts=parsed.posts||[];
-    if (!posts.length) throw new Error('No posts');
-    posts.forEach((p,i)=>{
-      if (p.dropbox_url&&p.dropbox_url.includes('dropbox.com')){
-        p.autoUrl=fixDropbox(p.dropbox_url);
-        p.urlSource='slide';
+    // Strip code fences if present
+    const stripped = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
+    // Extract JSON object
+    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
+    if (!jsonMatch) throw new Error('No JSON found');
+    const parsed = JSON.parse(jsonMatch[0]);
+    posts = parsed.posts || [];
+    if (!posts.length) throw new Error('No posts found');
+    // Normalise post types
+    posts.forEach((p,i) => {
+      p.post_type = p.post_type || 'PHOTO';
+      // Handle Dropbox URL from slide
+      if (p.dropbox_url && p.dropbox_url.includes('dropbox.com')){
+        p.autoUrl   = fixDropbox(p.dropbox_url);
+        p.urlSource = 'slide';
       }
     });
     rebuildAllUrls();
     renderTable();
     updateCount();
-    const withUrls=posts.filter(p=>p.autoUrl).length;
-    loadMsg.style.color='var(--green)';
-    loadMsg.textContent=`✓ ${posts.length} posts loaded — ${withUrls} URLs found automatically, ${posts.length-withUrls} need manual URL.`;
-    document.getElementById('jsonPaste').value='';
+    const withUrls = posts.filter(p => p.autoUrl).length;
+    loadMsg.style.color = 'var(--green)';
+    loadMsg.textContent = `✓ ${posts.length} posts loaded — ${withUrls} URLs found automatically, ${posts.length - withUrls} need manual URL.`;
+    document.getElementById('jsonPaste').value = '';
   } catch(e){
-    loadMsg.style.color='#c62828';
-    loadMsg.textContent='Could not read the data — make sure you copied the full response from Claude.';
+    console.error('JSON parse error:', e);
+    loadMsg.style.color = '#c62828';
+    loadMsg.textContent = 'Could not read the data — make sure you clicked the copy button on the code block Claude returned.';
   }
 }
 
 // ─── URL BUILDING ──────────────────────────────────────────────────────────────
-function getExt(t){ return TYPE_EXT[t?.toUpperCase()]||TYPE_EXT[t]||'jpg'; }
+function getExt(t){ 
+  if (!t) return 'jpg';
+  const upper = t.toUpperCase();
+  if (upper.includes('REEL') || upper.includes('VIDEO')) return 'mp4';
+  return TYPE_EXT[upper] || TYPE_EXT[t] || 'jpg'; 
+}
 
 function buildUrl(post){
   const c=clients.find(x=>x.id===document.getElementById('sel-client').value);
