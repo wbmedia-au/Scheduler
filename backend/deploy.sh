@@ -66,6 +66,12 @@ aws iam attach-role-policy \
   --role-name "$ROLE_NAME" \
   --policy-arn arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole >/dev/null
 
+# Superseded by the combined "wb-scheduler-s3-access" policy below — remove if present
+# from an earlier deploy so there's a single source of truth for S3 permissions.
+aws iam delete-role-policy \
+  --role-name "$ROLE_NAME" \
+  --policy-name "wb-scheduler-clients-json-access" >/dev/null 2>&1 || true
+
 cat > /tmp/s3-policy.json <<EOF
 {
   "Version": "2012-10-17",
@@ -74,17 +80,52 @@ cat > /tmp/s3-policy.json <<EOF
       "Effect": "Allow",
       "Action": ["s3:GetObject", "s3:PutObject"],
       "Resource": "arn:aws:s3:::${S3_BUCKET}/${S3_KEY}"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
+      "Resource": "arn:aws:s3:::${S3_BUCKET}/scheduler/uploads/*"
     }
   ]
 }
 EOF
 aws iam put-role-policy \
   --role-name "$ROLE_NAME" \
-  --policy-name "wb-scheduler-clients-json-access" \
+  --policy-name "wb-scheduler-s3-access" \
   --policy-document file:///tmp/s3-policy.json >/dev/null
-echo "Attached S3 read/write policy scoped to s3://${S3_BUCKET}/${S3_KEY}"
+echo "Attached S3 policy: read/write on ${S3_KEY}, read/write/delete on scheduler/uploads/*"
 
 ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output text)
+
+echo "== S3 bucket CORS (allow browser PUT uploads) =="
+EXISTING_CORS=$(aws s3api get-bucket-cors --bucket "$S3_BUCKET" --region "$REGION" 2>/dev/null || echo '{"CORSRules":[]}')
+echo "$EXISTING_CORS" > /tmp/existing-cors.json
+python3 - <<PYEOF
+import json
+
+with open("/tmp/existing-cors.json") as f:
+    existing = json.load(f)
+
+rules = existing.get("CORSRules", [])
+new_rule = {
+    "AllowedOrigins": ["${ALLOWED_ORIGIN}"],
+    "AllowedMethods": ["PUT"],
+    "AllowedHeaders": ["*"],
+    "ExposeHeaders": ["ETag"],
+    "MaxAgeSeconds": 3000,
+}
+# Replace any prior rule with the same origin+methods instead of duplicating it on re-run.
+rules = [
+    r for r in rules
+    if not (r.get("AllowedOrigins") == new_rule["AllowedOrigins"] and r.get("AllowedMethods") == new_rule["AllowedMethods"])
+]
+rules.append(new_rule)
+
+with open("/tmp/cors.json", "w") as f:
+    json.dump({"CORSRules": rules}, f)
+PYEOF
+aws s3api put-bucket-cors --bucket "$S3_BUCKET" --cors-configuration file:///tmp/cors.json --region "$REGION"
+echo "Bucket CORS updated (existing rules preserved, PUT from ${ALLOWED_ORIGIN} added)."
 
 echo "== Lambda function =="
 ENV_VARS="Variables={S3_BUCKET=${S3_BUCKET},S3_KEY=${S3_KEY},ALLOWED_ORIGIN=${ALLOWED_ORIGIN},ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}}"
@@ -98,7 +139,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
   aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
   aws lambda update-function-configuration \
     --function-name "$FUNCTION_NAME" \
-    --timeout 28 \
+    --timeout 60 \
     --memory-size 512 \
     --environment "$ENV_VARS" \
     --region "$REGION" >/dev/null
@@ -112,7 +153,7 @@ else
       --runtime python3.12 \
       --role "$ROLE_ARN" \
       --handler lambda_function.lambda_handler \
-      --timeout 28 \
+      --timeout 60 \
       --memory-size 512 \
       --zip-file fileb://function.zip \
       --environment "$ENV_VARS" \
@@ -128,7 +169,7 @@ else
   done
   aws lambda wait function-active --function-name "$FUNCTION_NAME" --region "$REGION"
 fi
-echo "Lambda function $FUNCTION_NAME ready."
+echo "Lambda function $FUNCTION_NAME ready (60s timeout)."
 
 FUNCTION_ARN=$(aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" --query 'Configuration.FunctionArn' --output text)
 
@@ -164,20 +205,27 @@ INTEGRATION_ID=$(aws apigatewayv2 get-integrations --api-id "$API_ID" --region "
   --query "Items[?IntegrationUri=='${FUNCTION_ARN}'].IntegrationId" --output text)
 
 if [ -z "$INTEGRATION_ID" ] || [ "$INTEGRATION_ID" == "None" ]; then
+  # 30000ms is the hard ceiling for HTTP API integration timeouts — API Gateway cannot
+  # go higher than this no matter what the Lambda function's own timeout is set to.
   INTEGRATION_ID=$(aws apigatewayv2 create-integration \
     --api-id "$API_ID" \
     --integration-type AWS_PROXY \
     --integration-uri "$FUNCTION_ARN" \
     --payload-format-version "2.0" \
-    --timeout-in-millis 29000 \
+    --timeout-in-millis 30000 \
     --region "$REGION" \
     --query 'IntegrationId' --output text)
   echo "Created integration (IntegrationId=$INTEGRATION_ID)"
 else
-  echo "Reusing integration $INTEGRATION_ID"
+  aws apigatewayv2 update-integration \
+    --api-id "$API_ID" \
+    --integration-id "$INTEGRATION_ID" \
+    --timeout-in-millis 30000 \
+    --region "$REGION" >/dev/null
+  echo "Reusing integration $INTEGRATION_ID (timeout raised to API Gateway's 30000ms ceiling)"
 fi
 
-for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf"; do
+for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload-url" "POST /extract-from-s3"; do
   EXISTING=$(aws apigatewayv2 get-routes --api-id "$API_ID" --region "$REGION" \
     --query "Items[?RouteKey=='${ROUTE}'].RouteId" --output text)
   if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
@@ -219,16 +267,21 @@ echo "================================================================"
 echo " Deployment complete."
 echo " API Gateway base URL:  $API_URL"
 echo ""
-echo " Paste this URL into the Scheduler tool's Settings tab."
+echo " No change needed in the Scheduler tool's Settings tab if this URL"
+echo " matches what's already saved there."
 echo "================================================================"
 echo ""
 
 if [ -z "$ANTHROPIC_API_KEY" ]; then
-  echo "NOTE: ANTHROPIC_API_KEY was not set — PDF extraction will fail until you run:"
+  echo "NOTE: ANTHROPIC_API_KEY was not set on this run — if it's not already set from a"
+  echo "previous deploy, PDF extraction will fail until you run:"
   echo "  ANTHROPIC_API_KEY=sk-ant-... bash set-api-key.sh"
   echo ""
 fi
 
 echo "== Smoke test: GET /clients =="
-curl -s "${API_URL}/clients" || echo "(curl failed — check manually)"
+curl -s "${API_URL}/clients"
+echo ""
+echo "== Smoke test: POST /get-upload-url =="
+curl -s -X POST "${API_URL}/get-upload-url"
 echo ""

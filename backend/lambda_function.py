@@ -1,8 +1,10 @@
+import base64
 import json
 import os
 import re
 import urllib.error
 import urllib.request
+import uuid
 
 import boto3
 
@@ -14,7 +16,14 @@ ANTHROPIC_VERSION = "2023-06-01"
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://wbmedia-au.github.io")
 
+UPLOADS_PREFIX = "scheduler/uploads/"
+UPLOAD_KEY_RE = re.compile(r"^scheduler/uploads/[A-Za-z0-9-]+\.pdf$")
+UPLOAD_URL_TTL_SECONDS = 300
+
 # Lambda synchronous invoke payload limit is 6MB; base64 inflates raw bytes by ~1.33x.
+# Only relevant to the legacy /extract-pdf endpoint, which still goes through API Gateway
+# as a JSON body. /extract-from-s3 has no such limit since the PDF bypasses API Gateway
+# entirely via a presigned S3 upload.
 MAX_PDF_B64_CHARS = 7_000_000
 
 EXTRACTION_PROMPT = """Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
@@ -91,21 +100,10 @@ def _extract_json_block(text):
     return json.loads(match.group(0))
 
 
-def handle_extract_pdf(event):
+def _extract_via_anthropic(pdf_b64):
+    """Sends a base64 PDF to the Anthropic API and returns a Lambda response dict."""
     if not ANTHROPIC_API_KEY:
         return _response(500, {"error": "ANTHROPIC_API_KEY is not configured on the server yet"})
-
-    try:
-        payload = json.loads(event.get("body") or "{}")
-    except json.JSONDecodeError:
-        return _response(400, {"error": "Invalid JSON body"})
-
-    pdf_b64 = payload.get("pdf_base64", "")
-    if not pdf_b64:
-        return _response(400, {"error": "Missing 'pdf_base64' field"})
-
-    if len(pdf_b64) > MAX_PDF_B64_CHARS:
-        return _response(413, {"error": "PDF is too large to process (max ~5MB). Please compress or split it."})
 
     request_body = json.dumps(
         {
@@ -142,7 +140,7 @@ def handle_extract_pdf(event):
     )
 
     try:
-        with urllib.request.urlopen(req, timeout=25) as resp:
+        with urllib.request.urlopen(req, timeout=55) as resp:
             resp_data = json.loads(resp.read().decode("utf-8"))
     except urllib.error.HTTPError as e:
         detail = e.read().decode("utf-8", errors="replace")
@@ -164,6 +162,69 @@ def handle_extract_pdf(event):
     return _response(200, posts_json)
 
 
+def handle_extract_pdf(event):
+    """Legacy endpoint: PDF arrives base64-encoded in the request body via API Gateway.
+    Kept for backwards compatibility; the frontend now uses /get-upload-url + /extract-from-s3
+    instead, since API Gateway hard-caps payloads at 10MB (6MB for the Lambda proxy body)."""
+    try:
+        payload = json.loads(event.get("body") or "{}")
+    except json.JSONDecodeError:
+        return _response(400, {"error": "Invalid JSON body"})
+
+    pdf_b64 = payload.get("pdf_base64", "")
+    if not pdf_b64:
+        return _response(400, {"error": "Missing 'pdf_base64' field"})
+
+    if len(pdf_b64) > MAX_PDF_B64_CHARS:
+        return _response(413, {"error": "PDF is too large for this endpoint. Use /get-upload-url instead."})
+
+    return _extract_via_anthropic(pdf_b64)
+
+
+def handle_get_upload_url():
+    key = f"{UPLOADS_PREFIX}{uuid.uuid4()}.pdf"
+    try:
+        upload_url = s3.generate_presigned_url(
+            "put_object",
+            Params={"Bucket": S3_BUCKET, "Key": key},
+            ExpiresIn=UPLOAD_URL_TTL_SECONDS,
+        )
+    except Exception as e:
+        return _response(500, {"error": f"Failed to generate upload URL: {e}"})
+
+    return _response(200, {"uploadUrl": upload_url, "s3Key": key})
+
+
+def handle_extract_from_s3(event):
+    try:
+        payload = json.loads(event.get("body") or "{}")
+    except json.JSONDecodeError:
+        return _response(400, {"error": "Invalid JSON body"})
+
+    s3_key = payload.get("s3Key", "")
+    if not s3_key or not UPLOAD_KEY_RE.match(s3_key):
+        return _response(400, {"error": "Invalid or missing 's3Key'"})
+
+    try:
+        obj = s3.get_object(Bucket=S3_BUCKET, Key=s3_key)
+        pdf_bytes = obj["Body"].read()
+    except Exception as e:
+        return _response(404, {"error": f"Could not read uploaded PDF from S3: {e}"})
+
+    try:
+        pdf_b64 = base64.b64encode(pdf_bytes).decode("utf-8")
+        result = _extract_via_anthropic(pdf_b64)
+    finally:
+        # Always clean up the temporary upload, even if extraction failed, so
+        # failed/retried uploads don't pile up in the bucket.
+        try:
+            s3.delete_object(Bucket=S3_BUCKET, Key=s3_key)
+        except Exception:
+            pass
+
+    return result
+
+
 def lambda_handler(event, context):
     method, path = _method_and_path(event)
 
@@ -176,5 +237,9 @@ def lambda_handler(event, context):
         return handle_put_clients(event)
     if path == "/extract-pdf" and method == "POST":
         return handle_extract_pdf(event)
+    if path == "/get-upload-url" and method == "POST":
+        return handle_get_upload_url()
+    if path == "/extract-from-s3" and method == "POST":
+        return handle_extract_from_s3(event)
 
     return _response(404, {"error": f"No route for {method} {path}"})
