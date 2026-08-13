@@ -311,7 +311,7 @@ const MAX_PDF_BYTES  = 5 * 1024 * 1024; // ~5MB raw file, matches backend's base
 let clients   = [];
 let posts     = [];
 let editingId = null;
-let apiBase   = (localStorage.getItem(APIBASE_LOCAL) || '').replace(/\/+$/,'');
+let apiBase   = (localStorage.getItem(APIBASE_LOCAL) || 'https://j261orli37.execute-api.ap-southeast-2.amazonaws.com').replace(/\/+$/,'');
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
