@@ -159,32 +159,16 @@ td{padding:7px 12px;vertical-align:middle}
   </div>
 
   <div class="step">
-    <div class="step-header"><span class="step-num">Step 02</span><span class="step-title">Extract &amp; Paste Post Data</span></div>
+    <div class="step-header"><span class="step-num">Step 02</span><span class="step-title">Upload Canva Content Calendar PDF</span></div>
     <div class="step-body">
-      <div class="instr">
-        <p><strong>Step A:</strong> Open Claude at <a href="https://claude.ai" target="_blank" style="color:var(--red)">claude.ai</a> → upload your approved Canva PDF → paste the prompt below → when Claude responds, click the <strong>copy button</strong> on the code block it returns.<br>
-        <strong>Step B:</strong> Paste the copied data into the field below → click Load Posts.</p>
+      <div class="instr"><p>Upload the <strong>approved</strong> Canva content calendar PDF for this client. Claude reads every slide and extracts each post's date, type, caption and Dropbox link automatically — no copy/paste needed.</p></div>
+      <div class="upload-zone" id="uploadZone">
+        <input type="file" id="pdfInput" accept="application/pdf" onchange="onPdfSelected(event)"/>
+        <span class="u-icon">📄</span>
+        <div class="u-label">Drop PDF here or click to upload</div>
+        <div class="u-sub">Approved Canva content calendar — PDF only, up to ~5MB</div>
       </div>
-      <div style="background:var(--black);border-radius:4px;padding:14px 16px;margin-bottom:16px">
-        <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--g400);margin-bottom:8px">Claude Prompt — copy and paste into claude.ai with your PDF attached</div>
-        <textarea id="promptText" readonly rows="9" style="width:100%;background:transparent;border:none;outline:none;font-size:12px;color:#e0e0e0;line-height:1.7;font-family:monospace;resize:none;cursor:text">Please extract all posts from this WB Media content calendar PDF and return the data in the JSON format shown below. Wrap your response in a ```json code block so I can copy it easily — no other text before or after.
-
-```json
-{"posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags","dropbox_url":"https://www.dropbox.com/..."}]}
-```
-
-Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "".</textarea>
-        <button class="btn btn-ghost btn-sm" onclick="copyPrompt()" style="margin-top:10px;border-color:#444;color:#aaa">📋 Copy Prompt</button>
-        <div id="copyMsg" style="display:none;font-size:11px;color:#81c784;margin-top:6px">✓ Copied to clipboard!</div>
-      </div>
-      <div>
-        <label>Paste JSON from Claude here</label>
-        <textarea id="jsonPaste" rows="5" style="width:100%;border:1px solid var(--border);border-radius:3px;padding:10px 12px;font-size:12px;font-family:monospace;color:var(--black);background:var(--white);outline:none;resize:vertical;transition:.15s" placeholder='{"posts":[...]}'></textarea>
-      </div>
-      <div style="margin-top:10px;display:flex;gap:10px;align-items:center">
-        <button class="btn btn-primary" onclick="loadFromJSON()">Load Posts</button>
-        <span id="loadMsg" style="font-size:13px;color:var(--g400)"></span>
-      </div>
+      <div class="status-bar" id="extractStatus"></div>
     </div>
   </div>
 
@@ -195,7 +179,7 @@ Include every post slide. Skip cover pages, grid previews and feedback slides. I
       <div class="table-wrap">
         <table>
           <thead><tr><th>Post</th><th>Date</th><th>Type</th><th style="min-width:240px">Caption</th><th style="min-width:260px">Asset URL</th><th>Time</th></tr></thead>
-          <tbody id="postsBody"><tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Select a client and load posts to get started</p></div></td></tr></tbody>
+          <tbody id="postsBody"><tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Select a client and upload a PDF to get started</p></div></td></tr></tbody>
         </table>
       </div>
     </div>
@@ -244,49 +228,26 @@ Include every post slide. Skip cover pages, grid previews and feedback slides. I
 <div class="view" id="view-settings">
   <div style="margin-bottom:20px">
     <h2 style="font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:24px;letter-spacing:.04em;text-transform:uppercase">Settings <span class="admin-badge">Admin Only</span></h2>
-    <p style="font-size:12px;color:var(--g400);margin-top:4px">These settings are configured once by the team admin. Staff members do not need to touch this tab.</p>
+    <p style="font-size:12px;color:var(--g400);margin-top:4px">This is configured once by the team admin. Staff members do not need to touch this tab.</p>
   </div>
 
   <div class="settings-box">
-    <h3>🤖 Anthropic API Key</h3>
-    <p>Required for PDF caption extraction. Enter once — stored in JSONBin and shared automatically with your whole team. Staff never need to enter this.</p>
+    <h3>🔗 API Connection</h3>
+    <p>Points the tool at the WB Media backend (AWS API Gateway). Set this once after deploying the backend — everyone on the team then loads client profiles and PDF extraction automatically, with nothing to configure on their end.</p>
     <div class="field-row">
       <div>
-        <label>API Key</label>
-        <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-XXXXXXXX" oninput="document.getElementById('saveApiBtn').disabled=!this.value.trim()"/>
-        <p class="hint">Get your key at <strong>console.anthropic.com → API Keys</strong>. Stored securely in JSONBin — never in the code.</p>
+        <label>API Gateway Base URL</label>
+        <input type="text" id="apiBaseInput" placeholder="https://xxxxxxxxxx.execute-api.ap-southeast-2.amazonaws.com"/>
+        <p class="hint">No trailing slash. Printed at the end of the backend <code>deploy.sh</code> run.</p>
       </div>
-      <button class="btn btn-primary btn-sm" onclick="saveApiKey()" id="saveApiBtn" disabled>Save Key</button>
+      <button class="btn btn-primary btn-sm" onclick="saveApiBase()">Save &amp; Connect</button>
     </div>
-    <div id="apiKeyMsg" class="result-msg"></div>
-  </div>
-
-  <div class="settings-box">
-    <h3>☁ JSONBin Connection</h3>
-    <p>JSONBin stores all client profiles and settings. Enter your credentials once — after saving, the tool syncs automatically for everyone on your team.</p>
-    <div class="g2 mt">
-      <div>
-        <label>JSONBin API Key</label>
-        <input type="password" id="jsonbinKey" placeholder="$2b$10$XXXXXXXX" oninput="onJsonbinInput()"/>
-        <p class="hint">Get your key at <strong>jsonbin.io → API Keys</strong></p>
-      </div>
-      <div>
-        <label>Bin ID</label>
-        <input type="text" id="binId" placeholder="e.g. 6a17a694ddf5aa59f76e418a"/>
-        <p class="hint">Created automatically when you first connect</p>
-      </div>
-    </div>
-    <div style="margin-top:12px;display:flex;gap:8px;flex-wrap:wrap">
-      <button class="btn btn-ghost btn-sm" onclick="createBin()" id="createBinBtn" disabled>Create New Bin</button>
-      <button class="btn btn-ghost btn-sm" onclick="testJsonbin()">Test Connection</button>
-      <button class="btn btn-primary btn-sm" onclick="saveJsonbinSettings()">Save &amp; Connect</button>
-    </div>
-    <div id="jsonbinMsg" class="result-msg"></div>
+    <div id="apiBaseMsg" class="result-msg"></div>
   </div>
 
   <div class="settings-box">
     <h3>ℹ About</h3>
-    <p style="margin-bottom:0">Built for <strong>WB Media</strong> by Claude (Anthropic). Version 4.0<br>
+    <p style="margin-bottom:0">Built for <strong>WB Media</strong>. Version 5.0<br>
     Tool URL: <code>https://wbmedia-au.github.io/Scheduler</code></p>
   </div>
 </div>
@@ -335,29 +296,22 @@ Include every post slide. Skip cover pages, grid previews and feedback slides. I
 
 <script>
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const CACHE_KEY    = 'wb_clients_v5';
-const JBKEY_LOCAL  = 'wb_jbkey';
-const BINID_LOCAL  = 'wb_binid';
-const JSONBIN_BASE = 'https://api.jsonbin.io/v3';
-// Default credentials — staff get these automatically, no setup needed
-const DEFAULT_BIN_ID = '6a17a694ddf5aa59f76e418a';
-const DEFAULT_JB_KEY = '$2a$10$Qy/YDcwxT/LqljVC4.KscOnSECFKbW4ZoNjUCW.XInZCiR.XqoETG';
-const PLATFORMS    = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
-const TYPE_EXT     = {
+const CACHE_KEY      = 'wb_clients_v5';
+const APIBASE_LOCAL  = 'wb_api_base';
+const PLATFORMS      = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
+const TYPE_EXT       = {
   'CAROUSEL':'jpg','PHOTO':'jpg','GRAPHIC':'jpg','STORY':'jpg',
   'PHOTO/CAROUSEL':'jpg','CAROUSEL/PHOTO':'jpg',
   'REEL':'mp4','VIDEO':'mp4','REEL/VIDEO':'mp4','REEL / VIDEO':'mp4',
-  'REEL/VIDEO':'mp4','VIDEO/REEL':'mp4'
+  'VIDEO/REEL':'mp4'
 };
+const MAX_PDF_BYTES  = 5 * 1024 * 1024; // ~5MB raw file, matches backend's base64 cap
 
 // ─── STATE ─────────────────────────────────────────────────────────────────────
 let clients   = [];
 let posts     = [];
 let editingId = null;
-let apiKey    = '';
-// Use locally saved credentials if available, otherwise fall back to defaults
-let jbKey     = localStorage.getItem(JBKEY_LOCAL) || DEFAULT_JB_KEY;
-let binId     = localStorage.getItem(BINID_LOCAL) || DEFAULT_BIN_ID;
+let apiBase   = (localStorage.getItem(APIBASE_LOCAL) || '').replace(/\/+$/,'');
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
@@ -368,86 +322,31 @@ function setSyncPill(type, msg){
   el.textContent = msg;
 }
 
-// ─── JSONBIN SETTINGS (ADMIN) ──────────────────────────────────────────────────
-function onJsonbinInput(){
-  document.getElementById('createBinBtn').disabled = !document.getElementById('jsonbinKey').value.trim();
-}
-
-async function createBin(){
-  const key = document.getElementById('jsonbinKey').value.trim();
-  if (!key) return;
-  showMsg('jsonbinMsg', false, 'Creating bin…');
-  try {
-    const res = await fetch(`${JSONBIN_BASE}/b`, {
-      method:'POST',
-      headers:{ 'Content-Type':'application/json', 'X-Master-Key':key, 'X-Bin-Name':'WB Media Scheduler', 'X-Bin-Private':'true' },
-      body: JSON.stringify({ version:1, clients:[], anthropic_key:'' })
-    });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message||'Failed');
-    document.getElementById('binId').value = data.metadata.id;
-    showMsg('jsonbinMsg', true, `✓ Bin created! ID: ${data.metadata.id}`);
-  } catch(e){ showMsg('jsonbinMsg', false, `Error: ${e.message}`); }
-}
-
-async function testJsonbin(){
-  const key = document.getElementById('jsonbinKey').value.trim() || jbKey;
-  const id  = document.getElementById('binId').value.trim() || binId;
-  if (!key||!id){ showMsg('jsonbinMsg', false, 'Enter API key and Bin ID first.'); return; }
-  try {
-    const res  = await fetch(`${JSONBIN_BASE}/b/${id}/latest`, { headers:{ 'X-Master-Key':key } });
-    const data = await res.json();
-    if (!res.ok) throw new Error(data.message||'Failed');
-    showMsg('jsonbinMsg', true, `✓ Connected! ${(data.record?.clients||[]).length} clients found.`);
-  } catch(e){ showMsg('jsonbinMsg', false, `Could not connect: ${e.message}`); }
-}
-
-function saveJsonbinSettings(){
-  const key = document.getElementById('jsonbinKey').value.trim();
-  const id  = document.getElementById('binId').value.trim();
-  if (!key||!id){ showMsg('jsonbinMsg', false, 'Both API key and Bin ID required.'); return; }
-  jbKey = key; binId = id;
-  localStorage.setItem(JBKEY_LOCAL, key);
-  localStorage.setItem(BINID_LOCAL, id);
-  showMsg('jsonbinMsg', true, '✓ Saved. Loading profiles…');
+// ─── API SETTINGS (ADMIN) ──────────────────────────────────────────────────────
+function saveApiBase(){
+  const v = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/,'');
+  if (!v){ showMsg('apiBaseMsg', false, 'Enter the API Gateway base URL first.'); return; }
+  apiBase = v;
+  localStorage.setItem(APIBASE_LOCAL, v);
+  showMsg('apiBaseMsg', true, '✓ Saved. Loading profiles…');
   loadProfiles();
-  setTimeout(()=>switchView('clients'), 800);
 }
 
-async function saveApiKey(){
-  const key = document.getElementById('apiKeyInput').value.trim();
-  if (!key) return;
-  if (!jbKey||!binId){ showMsg('apiKeyMsg', false, 'Connect JSONBin first before saving the API key.'); return; }
-  try {
-    // Save API key into the JSONBin record alongside clients
-    const res = await fetch(`${JSONBIN_BASE}/b/${binId}`, {
-      method:'PUT',
-      headers:{ 'Content-Type':'application/json', 'X-Master-Key':jbKey },
-      body: JSON.stringify({ version:1, clients, anthropic_key: key })
-    });
-    if (!res.ok) throw new Error('Save failed');
-    apiKey = key;
-    showMsg('apiKeyMsg', true, '✓ API key saved and synced to your whole team.');
-  } catch(e){ showMsg('apiKeyMsg', false, `Error saving key: ${e.message}`); }
-}
-
-// ─── LOAD / SAVE ───────────────────────────────────────────────────────────────
+// ─── LOAD / SAVE CLIENT PROFILES ───────────────────────────────────────────────
 async function loadProfiles(){
-  if (!jbKey||!binId){
+  if (!apiBase){
     setSyncPill('err','⚠ Not set up');
     const cached = getCached();
     if (cached.length){ clients = cached; populateClientDropdown(); renderClientGrid(); }
-    else { document.getElementById('clientGrid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="ei">⟳</div><p>Loading profiles…</p></div>'; }
+    else { document.getElementById('clientGrid').innerHTML = '<div class="empty" style="grid-column:1/-1"><div class="ei">⚙️</div><p>Contact your team admin to get connected</p></div>'; }
     return;
   }
   setSyncPill('busy','⟳ Loading…');
   try {
-    const res  = await fetch(`${JSONBIN_BASE}/b/${binId}/latest?t=${Date.now()}`, { headers:{ 'X-Master-Key':jbKey } });
+    const res  = await fetch(`${apiBase}/clients?t=${Date.now()}`);
     const data = await res.json();
-    if (!res.ok) throw new Error(data.message||'Failed');
-    clients = data.record?.clients || [];
-    // Load API key from record — staff get it automatically
-    if (data.record?.anthropic_key) apiKey = data.record.anthropic_key;
+    if (!res.ok) throw new Error(data.error || 'Failed');
+    clients = data.clients || [];
     setCached(clients);
     setSyncPill('ok','☁ Synced');
     populateClientDropdown();
@@ -462,15 +361,16 @@ async function loadProfiles(){
 
 async function saveProfiles(){
   setCached(clients);
-  if (!jbKey||!binId){ setSyncPill('err','⚠ Not connected'); return; }
+  if (!apiBase){ setSyncPill('err','⚠ Not connected'); return; }
   setSyncPill('busy','⟳ Saving…');
   try {
-    const res = await fetch(`${JSONBIN_BASE}/b/${binId}`, {
-      method:'PUT',
-      headers:{ 'Content-Type':'application/json', 'X-Master-Key':jbKey },
-      body: JSON.stringify({ version:1, clients, anthropic_key: apiKey })
+    const res = await fetch(`${apiBase}/clients`, {
+      method: 'PUT',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ version:1, clients })
     });
-    if (!res.ok) throw new Error('Failed');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
     setSyncPill('ok','☁ Saved');
   } catch(e){ setSyncPill('err','⚠ Sync failed'); }
 }
@@ -485,11 +385,7 @@ function switchView(v){
   document.getElementById('view-'+v).classList.add('active');
   document.getElementById('tab-'+v).classList.add('active');
   if (v==='settings'){
-    if (jbKey) document.getElementById('jsonbinKey').value = jbKey;
-    if (binId) document.getElementById('binId').value = binId;
-    if (apiKey) document.getElementById('apiKeyInput').value = apiKey;
-    document.getElementById('createBinBtn').disabled = !jbKey;
-    document.getElementById('saveApiBtn').disabled = false;
+    if (apiBase) document.getElementById('apiBaseInput').value = apiBase;
   }
 }
 
@@ -533,35 +429,58 @@ function getSelectedAccounts(){
   return Array.from(document.querySelectorAll('.plat-check.on')).map(el=>({ platform:el.dataset.platform, accountId:el.dataset.accountId }));
 }
 
-// ─── COPY PROMPT ──────────────────────────────────────────────────────────────
-function copyPrompt(){
-  const el=document.getElementById('promptText');
-  el.select();
-  navigator.clipboard.writeText(el.value).then(()=>{
-    const msg=document.getElementById('copyMsg');
-    msg.style.display='block';
-    setTimeout(()=>msg.style.display='none',2000);
-  });
+// ─── PDF UPLOAD & EXTRACTION ───────────────────────────────────────────────────
+const uploadZone = document.getElementById('uploadZone');
+['dragover','dragenter'].forEach(evt => uploadZone.addEventListener(evt, e => { e.preventDefault(); uploadZone.classList.add('dragover'); }));
+['dragleave','dragend','drop'].forEach(evt => uploadZone.addEventListener(evt, () => uploadZone.classList.remove('dragover')));
+uploadZone.addEventListener('drop', e => {
+  e.preventDefault();
+  const file = e.dataTransfer?.files?.[0];
+  if (file) handlePdfFile(file);
+});
+
+function onPdfSelected(e){
+  const file = e.target.files[0];
+  if (file) handlePdfFile(file);
+  e.target.value = '';
 }
 
-// ─── LOAD FROM JSON PASTE ─────────────────────────────────────────────────────
-function loadFromJSON(){
-  const raw     = document.getElementById('jsonPaste').value.trim();
-  const loadMsg = document.getElementById('loadMsg');
-  if (!raw){ loadMsg.style.color='#c62828'; loadMsg.textContent='Please paste the JSON from Claude first.'; return; }
+function handlePdfFile(file){
+  if (file.type !== 'application/pdf' && !file.name.toLowerCase().endsWith('.pdf')){
+    showExtractStatus('error', 'Please upload a PDF file.');
+    return;
+  }
+  if (file.size > MAX_PDF_BYTES){
+    showExtractStatus('error', `This PDF is ${(file.size/1024/1024).toFixed(1)}MB — please compress or split it (max ~5MB).`);
+    return;
+  }
+  if (!apiBase){
+    showExtractStatus('error', 'No API connection configured. Ask your admin to set the API Gateway URL in Settings.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    const base64 = reader.result.split(',')[1];
+    extractPdf(base64, file.name);
+  };
+  reader.onerror = () => showExtractStatus('error', 'Could not read the file.');
+  reader.readAsDataURL(file);
+}
+
+async function extractPdf(base64, filename){
+  showExtractStatus('loading', `Extracting posts from ${filename}… this can take up to 30 seconds.`);
   try {
-    // Strip code fences if present
-    const stripped = raw.replace(/^```json\s*/,'').replace(/^```\s*/,'').replace(/\s*```$/,'').trim();
-    // Extract JSON object
-    const jsonMatch = stripped.match(/\{[\s\S]*\}/);
-    if (!jsonMatch) throw new Error('No JSON found');
-    const parsed = JSON.parse(jsonMatch[0]);
-    posts = parsed.posts || [];
-    if (!posts.length) throw new Error('No posts found');
-    // Normalise post types
-    posts.forEach((p,i) => {
+    const res  = await fetch(`${apiBase}/extract-pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ pdf_base64: base64 })
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || `Extraction failed (${res.status})`);
+    posts = data.posts || [];
+    if (!posts.length) throw new Error('No posts found in this PDF.');
+    posts.forEach(p => {
       p.post_type = p.post_type || 'PHOTO';
-      // Handle Dropbox URL from slide
       if (p.dropbox_url && p.dropbox_url.includes('dropbox.com')){
         p.autoUrl   = fixDropbox(p.dropbox_url);
         p.urlSource = 'slide';
@@ -571,22 +490,26 @@ function loadFromJSON(){
     renderTable();
     updateCount();
     const withUrls = posts.filter(p => p.autoUrl).length;
-    loadMsg.style.color = 'var(--green)';
-    loadMsg.textContent = `✓ ${posts.length} posts loaded — ${withUrls} URLs found automatically, ${posts.length - withUrls} need manual URL.`;
-    document.getElementById('jsonPaste').value = '';
+    showExtractStatus('success', `✓ ${posts.length} posts extracted — ${withUrls} URLs found automatically, ${posts.length - withUrls} need manual URL.`);
   } catch(e){
-    console.error('JSON parse error:', e);
-    loadMsg.style.color = '#c62828';
-    loadMsg.textContent = 'Could not read the data — make sure you clicked the copy button on the code block Claude returned.';
+    showExtractStatus('error', `Extraction failed: ${e.message}`);
   }
 }
 
+function showExtractStatus(type, msg){
+  const el = document.getElementById('extractStatus');
+  el.className = 'status-bar ' + type;
+  el.innerHTML = type === 'loading'
+    ? `<div class="spinner"></div><span>${escHtml(msg)}</span>`
+    : `<span>${escHtml(msg)}</span>`;
+}
+
 // ─── URL BUILDING ──────────────────────────────────────────────────────────────
-function getExt(t){ 
+function getExt(t){
   if (!t) return 'jpg';
   const upper = t.toUpperCase();
   if (upper.includes('REEL') || upper.includes('VIDEO')) return 'mp4';
-  return TYPE_EXT[upper] || TYPE_EXT[t] || 'jpg'; 
+  return TYPE_EXT[upper] || TYPE_EXT[t] || 'jpg';
 }
 
 function buildUrl(post){
@@ -639,7 +562,7 @@ function onOverride(i,val){
 function renderTable(){
   const tbody=document.getElementById('postsBody');
   tbody.innerHTML='';
-  if (!posts.length){ tbody.innerHTML='<tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Load posts above to get started</p></div></td></tr>'; return; }
+  if (!posts.length){ tbody.innerHTML='<tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Upload a PDF above to get started</p></div></td></tr>'; return; }
   const t=document.getElementById('defaultTime').value||'09:00';
   posts.forEach((p,i)=>{
     const tr=document.createElement('tr');
@@ -687,7 +610,7 @@ function renderClientGrid(){
   if (!clients.length){
     const empty=document.createElement('div');
     empty.className='empty'; empty.style.gridColumn='1/-1';
-    empty.innerHTML=(!jbKey||!binId)
+    empty.innerHTML=(!apiBase)
       ? '<div class="ei">⚙️</div><p>Contact your team admin to get connected</p>'
       : '<div class="ei">👥</div><p>No clients yet — click + Add Client</p>';
     grid.appendChild(empty); return;
@@ -787,10 +710,11 @@ function updateCount(){
 }
 function clearScheduler(){
   posts=[];
-  document.getElementById('postsBody').innerHTML='<tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Select a client and load posts to get started</p></div></td></tr>';
+  document.getElementById('postsBody').innerHTML='<tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Select a client and upload a PDF to get started</p></div></td></tr>';
   document.getElementById('exportBtn').disabled=true;
   document.getElementById('summary').style.display='none';
-  document.getElementById('loadMsg').textContent='';
+  document.getElementById('extractStatus').className='status-bar';
+  document.getElementById('extractStatus').innerHTML='';
   updateCount();
 }
 function onTimeChange(){
