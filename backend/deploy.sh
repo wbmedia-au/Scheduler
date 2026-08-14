@@ -225,7 +225,7 @@ else
   echo "Reusing integration $INTEGRATION_ID (timeout raised to API Gateway's 30000ms ceiling)"
 fi
 
-for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload-url" "POST /extract-from-s3"; do
+for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload-url"; do
   EXISTING=$(aws apigatewayv2 get-routes --api-id "$API_ID" --region "$REGION" \
     --query "Items[?RouteKey=='${ROUTE}'].RouteId" --output text)
   if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
@@ -239,6 +239,16 @@ for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload
     echo "Created route: $ROUTE"
   fi
 done
+
+# /extract-from-s3 has moved off API Gateway onto a Lambda Function URL (see below) to
+# get around API Gateway's hard 30s integration timeout. Remove the old route if a
+# previous deploy created it, so there's exactly one place this endpoint is reachable.
+OLD_ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "$API_ID" --region "$REGION" \
+  --query "Items[?RouteKey=='POST /extract-from-s3'].RouteId" --output text)
+if [ -n "$OLD_ROUTE_ID" ] && [ "$OLD_ROUTE_ID" != "None" ]; then
+  aws apigatewayv2 delete-route --api-id "$API_ID" --route-id "$OLD_ROUTE_ID" --region "$REGION" >/dev/null
+  echo "Removed old API Gateway route POST /extract-from-s3 (moved to Function URL)"
+fi
 
 if aws apigatewayv2 get-stage --api-id "$API_ID" --stage-name '$default' --region "$REGION" >/dev/null 2>&1; then
   echo "Default stage already exists."
@@ -262,13 +272,60 @@ aws lambda add-permission \
 
 API_URL="https://${API_ID}.execute-api.${REGION}.amazonaws.com"
 
+echo "== Lambda Function URL (POST /extract-from-s3, no 30s API Gateway ceiling) =="
+FUNCTION_URL_CORS=$(cat <<EOF
+{
+  "AllowOrigins": ["${ALLOWED_ORIGIN}"],
+  "AllowMethods": ["POST"],
+  "AllowHeaders": ["content-type"]
+}
+EOF
+)
+
+if aws lambda get-function-url-config --function-name "$FUNCTION_NAME" --region "$REGION" >/dev/null 2>&1; then
+  aws lambda update-function-url-config \
+    --function-name "$FUNCTION_NAME" \
+    --auth-type NONE \
+    --cors "$FUNCTION_URL_CORS" \
+    --region "$REGION" >/dev/null
+  echo "Function URL config updated."
+else
+  aws lambda create-function-url-config \
+    --function-name "$FUNCTION_NAME" \
+    --auth-type NONE \
+    --cors "$FUNCTION_URL_CORS" \
+    --region "$REGION" >/dev/null
+  echo "Function URL config created."
+fi
+
+# Resource policy allowing public, unauthenticated invocation via the Function URL —
+# separate from the lambda:InvokeFunction permission API Gateway uses above. This makes
+# the extraction endpoint reachable the same way the API Gateway endpoints already are
+# (no auth on any of them), just via a different URL with no 30s ceiling.
+aws lambda add-permission \
+  --function-name "$FUNCTION_NAME" \
+  --statement-id "FunctionURLAllowPublicAccess" \
+  --action lambda:InvokeFunctionUrl \
+  --principal '*' \
+  --function-url-auth-type NONE \
+  --region "$REGION" >/dev/null 2>&1 || echo "(Function URL invoke permission already exists, skipping)"
+
+FUNCTION_URL=$(aws lambda get-function-url-config --function-name "$FUNCTION_NAME" --region "$REGION" --query 'FunctionUrl' --output text)
+# Trim the trailing slash AWS includes, so it matches the no-trailing-slash convention
+# used for the API Gateway base URL elsewhere in this app.
+FUNCTION_URL="${FUNCTION_URL%/}"
+
 echo ""
 echo "================================================================"
 echo " Deployment complete."
-echo " API Gateway base URL:  $API_URL"
 echo ""
-echo " No change needed in the Scheduler tool's Settings tab if this URL"
-echo " matches what's already saved there."
+echo " API Gateway base URL (clients + get-upload-url):"
+echo "   $API_URL"
+echo ""
+echo " Lambda Function URL (PDF extraction, no timeout ceiling):"
+echo "   $FUNCTION_URL"
+echo ""
+echo " Paste BOTH into the Scheduler tool's Settings tab."
 echo "================================================================"
 echo ""
 
@@ -279,9 +336,12 @@ if [ -z "$ANTHROPIC_API_KEY" ]; then
   echo ""
 fi
 
-echo "== Smoke test: GET /clients =="
+echo "== Smoke test: GET /clients (API Gateway) =="
 curl -s "${API_URL}/clients"
 echo ""
-echo "== Smoke test: POST /get-upload-url =="
+echo "== Smoke test: POST /get-upload-url (API Gateway) =="
 curl -s -X POST "${API_URL}/get-upload-url"
+echo ""
+echo "== Smoke test: POST /extract-from-s3 with a bogus key (Function URL, expect a clean 400) =="
+curl -s -X POST "${FUNCTION_URL}/extract-from-s3" -H "Content-Type: application/json" -d '{"s3Key":"bogus"}'
 echo ""

@@ -233,12 +233,19 @@ td{padding:7px 12px;vertical-align:middle}
 
   <div class="settings-box">
     <h3>🔗 API Connection</h3>
-    <p>Points the tool at the WB Media backend (AWS API Gateway). Set this once after deploying the backend — everyone on the team then loads client profiles and PDF extraction automatically, with nothing to configure on their end.</p>
+    <p>Points the tool at the WB Media backend. Set these once after deploying the backend — everyone on the team then loads client profiles and PDF extraction automatically, with nothing to configure on their end.</p>
     <div class="field-row">
       <div>
         <label>API Gateway Base URL</label>
         <input type="text" id="apiBaseInput" placeholder="https://xxxxxxxxxx.execute-api.ap-southeast-2.amazonaws.com"/>
-        <p class="hint">No trailing slash. Printed at the end of the backend <code>deploy.sh</code> run.</p>
+        <p class="hint">No trailing slash. Handles client profiles and getting an upload URL. Printed at the end of the backend <code>deploy.sh</code> run.</p>
+      </div>
+    </div>
+    <div class="field-row">
+      <div>
+        <label>PDF Extraction Function URL</label>
+        <input type="text" id="extractUrlInput" placeholder="https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.lambda-url.ap-southeast-2.on.aws"/>
+        <p class="hint">No trailing slash. A separate Lambda Function URL with no 30-second timeout, used only for PDF extraction on large calendars. Also printed by <code>deploy.sh</code>.</p>
       </div>
       <button class="btn btn-primary btn-sm" onclick="saveApiBase()">Save &amp; Connect</button>
     </div>
@@ -296,8 +303,9 @@ td{padding:7px 12px;vertical-align:middle}
 
 <script>
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const CACHE_KEY      = 'wb_clients_v5';
-const APIBASE_LOCAL  = 'wb_api_base';
+const CACHE_KEY       = 'wb_clients_v5';
+const APIBASE_LOCAL   = 'wb_api_base';
+const EXTRACTURL_LOCAL = 'wb_extract_url';
 const PLATFORMS      = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
 const TYPE_EXT       = {
   'CAROUSEL':'jpg','PHOTO':'jpg','GRAPHIC':'jpg','STORY':'jpg',
@@ -310,7 +318,8 @@ const TYPE_EXT       = {
 let clients   = [];
 let posts     = [];
 let editingId = null;
-let apiBase   = (localStorage.getItem(APIBASE_LOCAL) || 'https://j261orli37.execute-api.ap-southeast-2.amazonaws.com').replace(/\/+$/,'');
+let apiBase    = (localStorage.getItem(APIBASE_LOCAL) || '').replace(/\/+$/,'');
+let extractUrl = (localStorage.getItem(EXTRACTURL_LOCAL) || '').replace(/\/+$/,'');
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
@@ -323,10 +332,13 @@ function setSyncPill(type, msg){
 
 // ─── API SETTINGS (ADMIN) ──────────────────────────────────────────────────────
 function saveApiBase(){
-  const v = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/,'');
+  const v  = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/,'');
+  const ev = document.getElementById('extractUrlInput').value.trim().replace(/\/+$/,'');
   if (!v){ showMsg('apiBaseMsg', false, 'Enter the API Gateway base URL first.'); return; }
   apiBase = v;
+  extractUrl = ev;
   localStorage.setItem(APIBASE_LOCAL, v);
+  localStorage.setItem(EXTRACTURL_LOCAL, ev);
   showMsg('apiBaseMsg', true, '✓ Saved. Loading profiles…');
   loadProfiles();
 }
@@ -385,6 +397,7 @@ function switchView(v){
   document.getElementById('tab-'+v).classList.add('active');
   if (v==='settings'){
     if (apiBase) document.getElementById('apiBaseInput').value = apiBase;
+    if (extractUrl) document.getElementById('extractUrlInput').value = extractUrl;
   }
 }
 
@@ -453,6 +466,10 @@ function handlePdfFile(file){
     showExtractStatus('error', 'No API connection configured. Ask your admin to set the API Gateway URL in Settings.');
     return;
   }
+  if (!extractUrl){
+    showExtractStatus('error', 'No extraction endpoint configured. Ask your admin to set the PDF Extraction Function URL in Settings.');
+    return;
+  }
   uploadAndExtractPdf(file);
 }
 
@@ -466,8 +483,8 @@ async function uploadAndExtractPdf(file){
     const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', body: file });
     if (!putRes.ok) throw new Error(`Upload to S3 failed (${putRes.status})`);
 
-    showExtractStatus('loading', `Extracting posts from ${file.name}… this can take up to 30 seconds.`);
-    const res  = await fetch(`${apiBase}/extract-from-s3`, {
+    showExtractStatus('loading', `Extracting posts from ${file.name}… large calendars can take a while.`);
+    const res  = await fetch(`${extractUrl}/extract-from-s3`, {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
       body: JSON.stringify({ s3Key: urlData.s3Key })
