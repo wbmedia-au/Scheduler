@@ -8,8 +8,9 @@
 # Usage:
 #   1. Upload lambda_function.py into CloudShell (drag-and-drop, or Actions -> Upload file)
 #      into the same directory as this script.
-#   2. (Optional) export ANTHROPIC_API_KEY=sk-ant-... before running, if you have it ready.
-#   3. bash deploy.sh
+#   2. bash deploy.sh sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
+#      (pass your Anthropic API key as the first argument; omit it only if you've already
+#      set it on the function on a previous run and just want to redeploy code/infra)
 #
 # Safe to re-run: it updates existing resources instead of failing on them.
 
@@ -24,7 +25,7 @@ ALLOWED_ORIGIN="https://wbmedia-au.github.io"
 FUNCTION_NAME="wb-scheduler-api"
 ROLE_NAME="wb-scheduler-lambda-role"
 API_NAME="wb-scheduler-api"
-ANTHROPIC_API_KEY="${ANTHROPIC_API_KEY:-}"
+ANTHROPIC_API_KEY="${1:-${ANTHROPIC_API_KEY:-}}"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -34,10 +35,16 @@ if [ ! -f lambda_function.py ]; then
   exit 1
 fi
 
-echo "== Packaging Lambda code =="
-rm -f function.zip
-zip -q function.zip lambda_function.py
-echo "Packaged function.zip"
+echo "== Packaging Lambda code (with pypdf) =="
+rm -rf build function.zip
+mkdir -p build
+# pypdf is pure Python (no compiled extensions, no hard dependencies), so installing it
+# with whatever python3/pip3 CloudShell provides and zipping it up is safe to run on the
+# Lambda python3.12 runtime regardless of CloudShell's own Python version.
+pip3 install --quiet --target build pypdf
+cp lambda_function.py build/
+(cd build && zip -qr ../function.zip .)
+echo "Packaged function.zip ($(du -h function.zip | cut -f1))"
 
 echo "== IAM role =="
 if aws iam get-role --role-name "$ROLE_NAME" >/dev/null 2>&1; then
@@ -85,6 +92,11 @@ cat > /tmp/s3-policy.json <<EOF
       "Effect": "Allow",
       "Action": ["s3:PutObject", "s3:GetObject", "s3:DeleteObject"],
       "Resource": "arn:aws:s3:::${S3_BUCKET}/scheduler/uploads/*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": ["s3:PutObject", "s3:GetObject"],
+      "Resource": "arn:aws:s3:::${S3_BUCKET}/scheduler/jobs/*"
     }
   ]
 }
@@ -93,7 +105,30 @@ aws iam put-role-policy \
   --role-name "$ROLE_NAME" \
   --policy-name "wb-scheduler-s3-access" \
   --policy-document file:///tmp/s3-policy.json >/dev/null
-echo "Attached S3 policy: read/write on ${S3_KEY}, read/write/delete on scheduler/uploads/*"
+echo "Attached S3 policy: clients.json, scheduler/uploads/*, scheduler/jobs/*"
+
+# The Lambda's own execution role needs permission to invoke the function itself
+# (InvocationType='Event') for the async extraction job. This is an identity-based
+# policy on the role, unrelated to the resource-based invoke permissions API Gateway
+# uses further down — the function ARN is deterministic so it doesn't need to exist yet.
+FUNCTION_ARN="arn:aws:lambda:${REGION}:${ACCOUNT_ID}:function:${FUNCTION_NAME}"
+cat > /tmp/self-invoke-policy.json <<EOF
+{
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": "lambda:InvokeFunction",
+      "Resource": "${FUNCTION_ARN}"
+    }
+  ]
+}
+EOF
+aws iam put-role-policy \
+  --role-name "$ROLE_NAME" \
+  --policy-name "wb-scheduler-self-invoke" \
+  --policy-document file:///tmp/self-invoke-policy.json >/dev/null
+echo "Attached self-invoke policy so the function can asynchronously call itself."
 
 ROLE_ARN=$(aws iam get-role --role-name "$ROLE_NAME" --query 'Role.Arn' --output text)
 
@@ -139,8 +174,8 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
   aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
   aws lambda update-function-configuration \
     --function-name "$FUNCTION_NAME" \
-    --timeout 60 \
-    --memory-size 512 \
+    --timeout 120 \
+    --memory-size 1024 \
     --environment "$ENV_VARS" \
     --region "$REGION" >/dev/null
   aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
@@ -153,8 +188,8 @@ else
       --runtime python3.12 \
       --role "$ROLE_ARN" \
       --handler lambda_function.lambda_handler \
-      --timeout 60 \
-      --memory-size 512 \
+      --timeout 120 \
+      --memory-size 1024 \
       --zip-file fileb://function.zip \
       --environment "$ENV_VARS" \
       --region "$REGION" >/dev/null 2>/tmp/create-fn-err.log; then
@@ -169,9 +204,17 @@ else
   done
   aws lambda wait function-active --function-name "$FUNCTION_NAME" --region "$REGION"
 fi
-echo "Lambda function $FUNCTION_NAME ready (60s timeout)."
+echo "Lambda function $FUNCTION_NAME ready (120s timeout, 1024MB)."
 
 FUNCTION_ARN=$(aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" --query 'Configuration.FunctionArn' --output text)
+
+echo "== Removing the Lambda Function URL (network-blocked, no longer used) =="
+aws lambda delete-function-url-config --function-name "$FUNCTION_NAME" --region "$REGION" >/dev/null 2>&1 \
+  && echo "Deleted Function URL config." \
+  || echo "(no Function URL config to remove, skipping)"
+aws lambda remove-permission --function-name "$FUNCTION_NAME" --statement-id "FunctionURLAllowPublicAccess" --region "$REGION" >/dev/null 2>&1 \
+  && echo "Removed Function URL invoke permission." \
+  || echo "(no Function URL permission to remove, skipping)"
 
 echo "== HTTP API (API Gateway v2) =="
 CORS_CONFIG=$(cat <<EOF
@@ -207,6 +250,9 @@ INTEGRATION_ID=$(aws apigatewayv2 get-integrations --api-id "$API_ID" --region "
 if [ -z "$INTEGRATION_ID" ] || [ "$INTEGRATION_ID" == "None" ]; then
   # 30000ms is the hard ceiling for HTTP API integration timeouts — API Gateway cannot
   # go higher than this no matter what the Lambda function's own timeout is set to.
+  # This no longer matters for extraction itself (that now runs async, off this timeout
+  # entirely) but the kickoff call (/extract-from-s3) and every other route still route
+  # through here, so it's still worth setting to the max for headroom.
   INTEGRATION_ID=$(aws apigatewayv2 create-integration \
     --api-id "$API_ID" \
     --integration-type AWS_PROXY \
@@ -222,10 +268,10 @@ else
     --integration-id "$INTEGRATION_ID" \
     --timeout-in-millis 30000 \
     --region "$REGION" >/dev/null
-  echo "Reusing integration $INTEGRATION_ID (timeout raised to API Gateway's 30000ms ceiling)"
+  echo "Reusing integration $INTEGRATION_ID"
 fi
 
-for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload-url"; do
+for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload-url" "POST /extract-from-s3" "GET /job/{job_id}"; do
   EXISTING=$(aws apigatewayv2 get-routes --api-id "$API_ID" --region "$REGION" \
     --query "Items[?RouteKey=='${ROUTE}'].RouteId" --output text)
   if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
@@ -239,16 +285,6 @@ for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload
     echo "Created route: $ROUTE"
   fi
 done
-
-# /extract-from-s3 has moved off API Gateway onto a Lambda Function URL (see below) to
-# get around API Gateway's hard 30s integration timeout. Remove the old route if a
-# previous deploy created it, so there's exactly one place this endpoint is reachable.
-OLD_ROUTE_ID=$(aws apigatewayv2 get-routes --api-id "$API_ID" --region "$REGION" \
-  --query "Items[?RouteKey=='POST /extract-from-s3'].RouteId" --output text)
-if [ -n "$OLD_ROUTE_ID" ] && [ "$OLD_ROUTE_ID" != "None" ]; then
-  aws apigatewayv2 delete-route --api-id "$API_ID" --route-id "$OLD_ROUTE_ID" --region "$REGION" >/dev/null
-  echo "Removed old API Gateway route POST /extract-from-s3 (moved to Function URL)"
-fi
 
 if aws apigatewayv2 get-stage --api-id "$API_ID" --stage-name '$default' --region "$REGION" >/dev/null 2>&1; then
   echo "Default stage already exists."
@@ -272,76 +308,37 @@ aws lambda add-permission \
 
 API_URL="https://${API_ID}.execute-api.${REGION}.amazonaws.com"
 
-echo "== Lambda Function URL (POST /extract-from-s3, no 30s API Gateway ceiling) =="
-FUNCTION_URL_CORS=$(cat <<EOF
-{
-  "AllowOrigins": ["${ALLOWED_ORIGIN}"],
-  "AllowMethods": ["POST"],
-  "AllowHeaders": ["content-type"]
-}
-EOF
-)
-
-if aws lambda get-function-url-config --function-name "$FUNCTION_NAME" --region "$REGION" >/dev/null 2>&1; then
-  aws lambda update-function-url-config \
-    --function-name "$FUNCTION_NAME" \
-    --auth-type NONE \
-    --cors "$FUNCTION_URL_CORS" \
-    --region "$REGION" >/dev/null
-  echo "Function URL config updated."
-else
-  aws lambda create-function-url-config \
-    --function-name "$FUNCTION_NAME" \
-    --auth-type NONE \
-    --cors "$FUNCTION_URL_CORS" \
-    --region "$REGION" >/dev/null
-  echo "Function URL config created."
-fi
-
-# Resource policy allowing public, unauthenticated invocation via the Function URL —
-# separate from the lambda:InvokeFunction permission API Gateway uses above. This makes
-# the extraction endpoint reachable the same way the API Gateway endpoints already are
-# (no auth on any of them), just via a different URL with no 30s ceiling.
-aws lambda add-permission \
-  --function-name "$FUNCTION_NAME" \
-  --statement-id "FunctionURLAllowPublicAccess" \
-  --action lambda:InvokeFunctionUrl \
-  --principal '*' \
-  --function-url-auth-type NONE \
-  --region "$REGION" >/dev/null 2>&1 || echo "(Function URL invoke permission already exists, skipping)"
-
-FUNCTION_URL=$(aws lambda get-function-url-config --function-name "$FUNCTION_NAME" --region "$REGION" --query 'FunctionUrl' --output text)
-# Trim the trailing slash AWS includes, so it matches the no-trailing-slash convention
-# used for the API Gateway base URL elsewhere in this app.
-FUNCTION_URL="${FUNCTION_URL%/}"
-
 echo ""
 echo "================================================================"
 echo " Deployment complete."
+echo " API Gateway base URL:  $API_URL"
 echo ""
-echo " API Gateway base URL (clients + get-upload-url):"
-echo "   $API_URL"
-echo ""
-echo " Lambda Function URL (PDF extraction, no timeout ceiling):"
-echo "   $FUNCTION_URL"
-echo ""
-echo " Paste BOTH into the Scheduler tool's Settings tab."
+echo " Paste this URL into the Scheduler tool's Settings tab (only one"
+echo " field needed now — the Function URL field has been removed)."
 echo "================================================================"
 echo ""
 
 if [ -z "$ANTHROPIC_API_KEY" ]; then
   echo "NOTE: ANTHROPIC_API_KEY was not set on this run — if it's not already set from a"
-  echo "previous deploy, PDF extraction will fail until you run:"
+  echo "previous deploy, extraction jobs will fail with a clear error until you run:"
+  echo "  bash deploy.sh sk-ant-api03-xxxx"
+  echo "or:"
   echo "  ANTHROPIC_API_KEY=sk-ant-... bash set-api-key.sh"
   echo ""
 fi
 
-echo "== Smoke test: GET /clients (API Gateway) =="
+echo "== Smoke test: GET /clients =="
 curl -s "${API_URL}/clients"
 echo ""
-echo "== Smoke test: POST /get-upload-url (API Gateway) =="
+echo "== Smoke test: POST /get-upload-url =="
 curl -s -X POST "${API_URL}/get-upload-url"
 echo ""
-echo "== Smoke test: POST /extract-from-s3 with a bogus key (Function URL, expect a clean 400) =="
-curl -s -X POST "${FUNCTION_URL}/extract-from-s3" -H "Content-Type: application/json" -d '{"s3Key":"bogus"}'
+echo "== Smoke test: POST /extract-from-s3 with a bogus key (expect a clean 400) =="
+curl -s -X POST "${API_URL}/extract-from-s3" -H "Content-Type: application/json" -d '{"s3Key":"bogus"}'
 echo ""
+echo "== Smoke test: GET /job/{bogus-id} (expect a clean 404) =="
+curl -s "${API_URL}/job/00000000-0000-0000-0000-000000000000"
+echo ""
+echo "Note: none of the above exercises a real extraction end-to-end (that needs a real"
+echo "PDF uploaded through the actual frontend). After deploying, upload a real content"
+echo "calendar through https://wbmedia-au.github.io/Scheduler and confirm it completes."

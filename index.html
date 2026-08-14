@@ -233,19 +233,12 @@ td{padding:7px 12px;vertical-align:middle}
 
   <div class="settings-box">
     <h3>🔗 API Connection</h3>
-    <p>Points the tool at the WB Media backend. Set these once after deploying the backend — everyone on the team then loads client profiles and PDF extraction automatically, with nothing to configure on their end.</p>
+    <p>Points the tool at the WB Media backend (AWS API Gateway). Set this once after deploying the backend — everyone on the team then loads client profiles and PDF extraction automatically, with nothing to configure on their end.</p>
     <div class="field-row">
       <div>
         <label>API Gateway Base URL</label>
         <input type="text" id="apiBaseInput" placeholder="https://xxxxxxxxxx.execute-api.ap-southeast-2.amazonaws.com"/>
-        <p class="hint">No trailing slash. Handles client profiles and getting an upload URL. Printed at the end of the backend <code>deploy.sh</code> run.</p>
-      </div>
-    </div>
-    <div class="field-row">
-      <div>
-        <label>PDF Extraction Function URL</label>
-        <input type="text" id="extractUrlInput" placeholder="https://xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.lambda-url.ap-southeast-2.on.aws"/>
-        <p class="hint">No trailing slash. A separate Lambda Function URL with no 30-second timeout, used only for PDF extraction on large calendars. Also printed by <code>deploy.sh</code>.</p>
+        <p class="hint">No trailing slash. Printed at the end of the backend <code>deploy.sh</code> run.</p>
       </div>
       <button class="btn btn-primary btn-sm" onclick="saveApiBase()">Save &amp; Connect</button>
     </div>
@@ -254,7 +247,7 @@ td{padding:7px 12px;vertical-align:middle}
 
   <div class="settings-box">
     <h3>ℹ About</h3>
-    <p style="margin-bottom:0">Built for <strong>WB Media</strong>. Version 5.0<br>
+    <p style="margin-bottom:0">Built for <strong>WB Media</strong>. Version 6.0<br>
     Tool URL: <code>https://wbmedia-au.github.io/Scheduler</code></p>
   </div>
 </div>
@@ -303,9 +296,8 @@ td{padding:7px 12px;vertical-align:middle}
 
 <script>
 // ─── CONFIG ────────────────────────────────────────────────────────────────────
-const CACHE_KEY       = 'wb_clients_v5';
-const APIBASE_LOCAL   = 'wb_api_base';
-const EXTRACTURL_LOCAL = 'wb_extract_url';
+const CACHE_KEY      = 'wb_clients_v5';
+const APIBASE_LOCAL  = 'wb_api_base';
 const PLATFORMS      = ['Instagram','Facebook','TikTok','LinkedIn','YouTube'];
 const TYPE_EXT       = {
   'CAROUSEL':'jpg','PHOTO':'jpg','GRAPHIC':'jpg','STORY':'jpg',
@@ -318,8 +310,7 @@ const TYPE_EXT       = {
 let clients   = [];
 let posts     = [];
 let editingId = null;
-let apiBase    = (localStorage.getItem(APIBASE_LOCAL) || '').replace(/\/+$/,'');
-let extractUrl = (localStorage.getItem(EXTRACTURL_LOCAL) || '').replace(/\/+$/,'');
+let apiBase   = (localStorage.getItem(APIBASE_LOCAL) || '').replace(/\/+$/,'');
 
 const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2);
 
@@ -332,13 +323,10 @@ function setSyncPill(type, msg){
 
 // ─── API SETTINGS (ADMIN) ──────────────────────────────────────────────────────
 function saveApiBase(){
-  const v  = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/,'');
-  const ev = document.getElementById('extractUrlInput').value.trim().replace(/\/+$/,'');
+  const v = document.getElementById('apiBaseInput').value.trim().replace(/\/+$/,'');
   if (!v){ showMsg('apiBaseMsg', false, 'Enter the API Gateway base URL first.'); return; }
   apiBase = v;
-  extractUrl = ev;
   localStorage.setItem(APIBASE_LOCAL, v);
-  localStorage.setItem(EXTRACTURL_LOCAL, ev);
   showMsg('apiBaseMsg', true, '✓ Saved. Loading profiles…');
   loadProfiles();
 }
@@ -397,7 +385,6 @@ function switchView(v){
   document.getElementById('tab-'+v).classList.add('active');
   if (v==='settings'){
     if (apiBase) document.getElementById('apiBaseInput').value = apiBase;
-    if (extractUrl) document.getElementById('extractUrlInput').value = extractUrl;
   }
 }
 
@@ -466,12 +453,13 @@ function handlePdfFile(file){
     showExtractStatus('error', 'No API connection configured. Ask your admin to set the API Gateway URL in Settings.');
     return;
   }
-  if (!extractUrl){
-    showExtractStatus('error', 'No extraction endpoint configured. Ask your admin to set the PDF Extraction Function URL in Settings.');
-    return;
-  }
   uploadAndExtractPdf(file);
 }
+
+function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
+
+const JOB_POLL_INTERVAL_MS = 3000;
+const JOB_POLL_TIMEOUT_MS  = 5 * 60 * 1000;
 
 async function uploadAndExtractPdf(file){
   showExtractStatus('loading', `Uploading ${file.name}…`);
@@ -483,39 +471,82 @@ async function uploadAndExtractPdf(file){
     const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', body: file });
     if (!putRes.ok) throw new Error(`Upload to S3 failed (${putRes.status})`);
 
-    showExtractStatus('loading', `Extracting posts from ${file.name}… this can take up to 60 seconds for large calendars.`);
-    // Retry up to 3 times on 503 (Lambda still processing)
-    let res, data;
-    for (let attempt = 1; attempt <= 3; attempt++) {
-      res = await fetch(`${extractUrl}/extract-from-s3`, {
-        method: 'POST',
-        headers: { 'Content-Type':'application/json' },
-        body: JSON.stringify({ s3Key: urlData.s3Key })
-      });
-      data = await res.json();
-      if (res.status !== 503) break;
-      if (attempt < 3) {
-        showExtractStatus('loading', `Still extracting… please wait (attempt ${attempt + 1}/3)`);
-        await new Promise(r => setTimeout(r, 5000));
-      }
-    }
-    if (!res.ok) throw new Error(data.error || `Extraction failed (${res.status})`);
-    posts = data.posts || [];
-    if (!posts.length) throw new Error('No posts found in this PDF.');
-    posts.forEach(p => {
-      p.post_type = p.post_type || 'PHOTO';
-      if (p.dropbox_url && p.dropbox_url.includes('dropbox.com')){
-        p.autoUrl   = fixDropbox(p.dropbox_url);
-        p.urlSource = 'slide';
-      }
+    showExtractStatus('loading', `Starting extraction of ${file.name}…`);
+    const startRes  = await fetch(`${apiBase}/extract-from-s3`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ s3Key: urlData.s3Key })
     });
-    rebuildAllUrls();
-    renderTable();
-    updateCount();
-    const withUrls = posts.filter(p => p.autoUrl).length;
-    showExtractStatus('success', `✓ ${posts.length} posts extracted — ${withUrls} URLs found automatically, ${posts.length - withUrls} need manual URL.`);
+    const startData = await startRes.json();
+    if (!startRes.ok) throw new Error(startData.error || `Could not start extraction (${startRes.status})`);
+
+    await pollExtractionJob(startData.job_id);
   } catch(e){
     showExtractStatus('error', `${e.message}`);
+  }
+}
+
+async function pollExtractionJob(jobId){
+  const startedAt = Date.now();
+  showExtractStatus('loading', 'Extracting posts… Claude is reading your calendar.');
+
+  while (true){
+    await sleep(JOB_POLL_INTERVAL_MS);
+    const elapsedSec = Math.round((Date.now() - startedAt) / 1000);
+
+    if (Date.now() - startedAt > JOB_POLL_TIMEOUT_MS){
+      showExtractStatus('error', 'Still extracting after 5 minutes — this is taking longer than expected. Please try again, or contact your admin if it keeps happening.');
+      return;
+    }
+
+    let res, data;
+    try {
+      res  = await fetch(`${apiBase}/job/${jobId}`);
+      data = await res.json();
+    } catch(e){
+      showExtractStatus('loading', `Still extracting… (${elapsedSec}s)`);
+      continue; // transient network blip — keep polling
+    }
+
+    if (res.status === 404){
+      showExtractStatus('error', data.error || 'Extraction job not found.');
+      return;
+    }
+    if (!res.ok){
+      showExtractStatus('loading', `Still extracting… (${elapsedSec}s)`);
+      continue;
+    }
+
+    if (data.status === 'processing'){
+      showExtractStatus('loading', `Still extracting… (${elapsedSec}s)`);
+      continue;
+    }
+    if (data.status === 'error'){
+      showExtractStatus('error', data.message || 'Extraction failed.');
+      return;
+    }
+    if (data.status === 'complete'){
+      posts = data.posts || [];
+      if (!posts.length){
+        showExtractStatus('error', 'No posts found in this PDF.');
+        return;
+      }
+      posts.forEach(p => {
+        p.post_type = p.post_type || 'PHOTO';
+        if (p.dropbox_url && p.dropbox_url.includes('dropbox.com')){
+          p.autoUrl   = fixDropbox(p.dropbox_url);
+          p.urlSource = 'slide';
+        }
+      });
+      rebuildAllUrls();
+      renderTable();
+      updateCount();
+      const withUrls = posts.filter(p => p.autoUrl).length;
+      showExtractStatus('success', `✓ ${posts.length} posts extracted — ${withUrls} URLs found automatically, ${posts.length - withUrls} need manual URL.`);
+      return;
+    }
+    // Unknown/unexpected status — keep polling rather than erroring out on a fluke.
+    showExtractStatus('loading', `Still extracting… (${elapsedSec}s)`);
   }
 }
 
