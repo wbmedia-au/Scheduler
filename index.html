@@ -580,8 +580,11 @@ function rebuildAllUrls(){
 
 function fixDropbox(url){
   if (!url) return url;
-  url=url.replace(/[?&]dl=0/,m=>m.replace('dl=0','dl=1'));
-  if (url.includes('dropbox.com')&&!url.includes('dl=')) url+=(url.includes('?')?'&':'?')+'dl=1';
+  // Convert to dl.dropboxusercontent.com for Social Pilot compatibility
+  if (url.includes('dropbox.com')) {
+    url = url.replace(/[?&]dl=[01]/g, '').replace(/&&/g, '&').replace(/[?&]$/g, '');
+    url = url.replace('www.dropbox.com', 'dl.dropboxusercontent.com');
+  }
   return url;
 }
 
