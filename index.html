@@ -119,9 +119,30 @@ td{padding:7px 12px;vertical-align:middle}
 .plat-check:hover{border-color:var(--g400)}
 .plat-check.on{background:rgba(204,21,21,.08);border-color:rgba(204,21,21,.3);color:var(--red);font-weight:600}
 .plat-check input{display:none}
+
+.pw-overlay{position:fixed;inset:0;background:var(--black);z-index:1000;display:flex;align-items:center;justify-content:center}
+.pw-box{background:#1a1a1a;border:1px solid var(--border);border-radius:6px;padding:40px;width:100%;max-width:400px;text-align:center}
+.pw-logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:28px;color:var(--white);margin-bottom:4px}
+.pw-logo span{color:var(--red)}
+.pw-sub{font-size:12px;color:var(--g400);margin-bottom:28px;letter-spacing:.1em;text-transform:uppercase}
+.pw-input{width:100%;border:1px solid var(--border);border-radius:3px;padding:12px;font-size:14px;font-family:'Barlow',sans-serif;color:var(--white);background:#111;outline:none;text-align:center;letter-spacing:.2em;margin-bottom:12px}
+.pw-input:focus{border-color:var(--red)}
+.pw-btn{width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
+.pw-btn:hover{background:var(--red-dark)}
+.pw-error{color:#ef9a9a;font-size:12px;margin-top:8px;display:none}
 </style>
 </head>
 <body>
+<div class="pw-overlay" id="pwOverlay">
+  <div class="pw-box">
+    <div class="pw-logo">WB<span>.</span> <span style="font-size:16px;font-weight:400;color:var(--g400);letter-spacing:.12em">MEDIA</span></div>
+    <div class="pw-sub">Social Pilot Scheduler</div>
+    <input type="password" class="pw-input" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPw()"/>
+    <button class="pw-btn" onclick="checkPw()">Access Tool</button>
+    <div class="pw-error" id="pwError">Incorrect password. Please try again.</div>
+  </div>
+</div>
+
 
 <header>
   <div class="logo">WB<span>.</span> <span style="font-size:13px;font-weight:400;color:var(--g400);letter-spacing:.12em">MEDIA</span></div>
@@ -784,6 +805,28 @@ function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
 const cached=getCached();
 if(cached.length){ clients=cached; populateClientDropdown(); renderClientGrid(); }
 loadProfiles();
+
+// ─── PASSWORD PROTECTION ──────────────────────────────────────────────────────
+const PW_KEY = 'wb_auth';
+const PW_HASH = 'WBMedia2026';
+
+function checkPw(){
+  const val = document.getElementById('pwInput').value;
+  if (val === PW_HASH) {
+    localStorage.setItem(PW_KEY, btoa(PW_HASH));
+    document.getElementById('pwOverlay').style.display = 'none';
+  } else {
+    document.getElementById('pwError').style.display = 'block';
+    document.getElementById('pwInput').value = '';
+    document.getElementById('pwInput').focus();
+  }
+}
+
+// Check on load
+if (localStorage.getItem(PW_KEY) === btoa(PW_HASH)) {
+  document.getElementById('pwOverlay').style.display = 'none';
+}
+
 </script>
 </body>
 </html>
