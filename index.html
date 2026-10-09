@@ -688,7 +688,8 @@ function generateCSV(){
     const url=p.manualUrl||p.autoUrl||'';
     const t=document.getElementById(`time-${i}`)?.value||'09:00';
     const dt=fmtDateCSV(p.date,t);
-    const cap=p.caption.replace(/"/g,'""');
+    const rawCap=p.caption.replace(/\\n/g,'\n').replace(/\n/g,'\n');
+    const cap=rawCap.replace(/"/g,'""');
     // Use per-post platform selection
     const postPlats = Array.from(document.querySelectorAll(`.post-plat-${i}:checked`))
       .map(el=>({platform:el.dataset.platform, accountId:el.dataset.account}));
