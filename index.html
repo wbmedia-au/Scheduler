@@ -647,11 +647,6 @@ function renderTable(){
     // Get client accounts for platform checkboxes
     const clientAccts = (clients.find(x=>x.id===document.getElementById('sel-client').value)?.accounts||[]);
     const selectedPlats = getSelectedAccounts().map(a=>a.platform);
-    const platChecksHtml = clientAccts.map(a=>`
-      <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;white-space:nowrap;margin-bottom:3px">
-        <input type="checkbox" class="post-plat-${i}" data-platform="${escHtml(a.platform)}" data-account="${escHtml(a.accountId)}" ${selectedPlats.includes(a.platform)?'checked':''}>
-        ${escHtml(a.platform)}
-      </label>`).join('');
     tr.innerHTML=`
       <td><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--red);white-space:nowrap">${escHtml(p.label)}</div></td>
       <td><div style="font-size:12px;color:var(--g600);white-space:nowrap">${fmtDateDisp(p.date)}</div></td>
@@ -661,6 +656,23 @@ function renderTable(){
       <td><input type="time" class="tbl-input" id="time-${i}" value="${t}" style="width:100px"/></td>`;
     tbody.appendChild(tr);
     renderUrlCell(document.getElementById(`uc-${i}`),p,i);
+    // Populate platform checkboxes
+    const pcCell = document.getElementById(`pc-${i}`);
+    if (pcCell) {
+      clientAccts.forEach(a => {
+        const lbl = document.createElement('label');
+        lbl.style.cssText = 'display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;white-space:nowrap;margin-bottom:3px';
+        const cb = document.createElement('input');
+        cb.type = 'checkbox';
+        cb.className = `post-plat-${i}`;
+        cb.dataset.platform = a.platform;
+        cb.dataset.account = a.accountId;
+        cb.checked = selectedPlats.includes(a.platform);
+        lbl.appendChild(cb);
+        lbl.appendChild(document.createTextNode(' ' + a.platform));
+        pcCell.appendChild(lbl);
+      });
+    }
   });
   document.getElementById('exportBtn').disabled=false;
 }
