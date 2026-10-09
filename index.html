@@ -199,7 +199,7 @@ td{padding:7px 12px;vertical-align:middle}
       <div class="instr"><p>Dropbox URLs are pulled automatically from your Canva slides. If a post shows orange <strong>Paste URL</strong>, paste the Dropbox link for that asset directly into the override field — <code>?dl=0</code> is fixed automatically.</p></div>
       <div class="table-wrap">
         <table>
-          <thead><tr><th>Post</th><th>Date</th><th>Type</th><th style="min-width:240px">Caption</th><th style="min-width:260px">Asset URL</th><th>Time</th></tr></thead>
+          <thead><tr><th>Post</th><th>Date</th><th>Type</th><th style="min-width:240px">Caption</th><th style="min-width:260px">Asset URL</th><th>Time</th><th>Platforms</th></tr></thead>
           <tbody id="postsBody"><tr><td colspan="6"><div class="empty"><div class="ei">☝️</div><p>Select a client and upload a PDF to get started</p></div></td></tr></tbody>
         </table>
       </div>
@@ -644,6 +644,14 @@ function renderTable(){
   const t=document.getElementById('defaultTime').value||'09:00';
   posts.forEach((p,i)=>{
     const tr=document.createElement('tr');
+    // Get client accounts for platform checkboxes
+    const clientAccts = (clients.find(x=>x.id===document.getElementById('sel-client').value)?.accounts||[]);
+    const selectedPlats = getSelectedAccounts().map(a=>a.platform);
+    const platChecksHtml = clientAccts.map(a=>`
+      <label style="display:flex;align-items:center;gap:4px;font-size:11px;cursor:pointer;white-space:nowrap;margin-bottom:3px">
+        <input type="checkbox" class="post-plat-${i}" data-platform="${escHtml(a.platform)}" data-account="${escHtml(a.accountId)}" ${selectedPlats.includes(a.platform)?'checked':''}>
+        ${escHtml(a.platform)}
+      </label>`).join('');
     tr.innerHTML=`
       <td><div style="font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:12px;letter-spacing:.05em;text-transform:uppercase;color:var(--red);white-space:nowrap">${escHtml(p.label)}</div></td>
       <td><div style="font-size:12px;color:var(--g600);white-space:nowrap">${fmtDateDisp(p.date)}</div></td>
@@ -668,7 +676,11 @@ function generateCSV(){
     const t=document.getElementById(`time-${i}`)?.value||'09:00';
     const dt=fmtDateCSV(p.date,t);
     const cap=p.caption.replace(/"/g,'""');
-    accounts.forEach(a=>rows.push(`"${cap}","${url}","${dt}","${a.accountId}","","${a.platform}"`));
+    // Use per-post platform selection
+    const postPlats = Array.from(document.querySelectorAll(`.post-plat-${i}:checked`))
+      .map(el=>({platform:el.dataset.platform, accountId:el.dataset.account}));
+    const platsToUse = postPlats.length > 0 ? postPlats : accounts;
+    platsToUse.forEach(a=>rows.push(`"${cap}","${url}","${dt}","${a.accountId}","","${a.platform}"`));
   });
   const blob=new Blob([rows.join('\n')],{type:'text/csv;charset=utf-8;'});
   const url=URL.createObjectURL(blob);
