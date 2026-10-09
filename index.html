@@ -653,7 +653,8 @@ function renderTable(){
       <td><span class="badge b-grey">${escHtml(p.post_type)}</span></td>
       <td><div class="caption-wrap"><div class="caption-clamp" title="${escHtml(p.caption)}">${escHtml(p.caption)}</div></div></td>
       <td id="uc-${i}"></td>
-      <td><input type="time" class="tbl-input" id="time-${i}" value="${t}" style="width:100px"/></td>`;
+      <td><input type="time" class="tbl-input" id="time-${i}" value="${t}" style="width:100px"/></td>
+      <td id="pc-${i}" style="min-width:110px;vertical-align:middle"></td>`;
     tbody.appendChild(tr);
     renderUrlCell(document.getElementById(`uc-${i}`),p,i);
     // Populate platform checkboxes
