@@ -326,7 +326,10 @@ const TYPE_EXT       = {
   'REEL':'mp4','VIDEO':'mp4','REEL/VIDEO':'mp4','REEL / VIDEO':'mp4',
   'VIDEO/REEL':'mp4'
 };
-const MAX_PDF_BYTES  = 5 * 1024 * 1024; // ~5MB raw; backend caps base64 at 7,000,000 chars
+// Sanity cap only — the presigned-URL upload goes straight to S3, not through
+// API Gateway/Lambda, so there's no 5-6MB wall here. 200MB comfortably covers
+// real Canva exports (typically 75-81MB) with headroom.
+const MAX_PDF_BYTES  = 200 * 1024 * 1024;
 
 // ─── STATE ─────────────────────────────────────────────────────────────────────
 let clients   = [];
@@ -480,12 +483,24 @@ function handlePdfFile(file){
 
 function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 
-function fileToBase64(file){
+// Uploads a file straight to S3 via a presigned PUT URL, reporting progress
+// (0-100) through onProgress as the browser streams the bytes up. This never
+// touches API Gateway or Lambda, so there's no payload-size ceiling — it's
+// the only upload path that works for this app's real 75-81MB PDFs.
+function uploadFileWithProgress(url, file, onProgress){
   return new Promise((resolve, reject) => {
-    const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result.split(',')[1]);
-    reader.onerror = () => reject(new Error('Could not read the file.'));
-    reader.readAsDataURL(file);
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', url, true);
+    xhr.upload.onprogress = (e) => {
+      if (e.lengthComputable && onProgress) onProgress(Math.round((e.loaded / e.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status >= 200 && xhr.status < 300) resolve();
+      else reject(new Error(`S3 upload failed (${xhr.status})`));
+    };
+    xhr.onerror = () => reject(new Error('Network error while uploading to S3.'));
+    xhr.ontimeout = () => reject(new Error('Upload to S3 timed out.'));
+    xhr.send(file);
   });
 }
 
@@ -494,26 +509,25 @@ const JOB_POLL_TIMEOUT_MS  = 5 * 60 * 1000;
 
 async function uploadAndExtractPdf(file){
   if (file.size > MAX_PDF_BYTES){
-    showExtractStatus('error', `This PDF is ${(file.size/1024/1024).toFixed(1)}MB — please compress or split it (max ~5MB).`);
+    showExtractStatus('error', `This PDF is ${(file.size/1024/1024).toFixed(1)}MB — please compress or split it (max ${MAX_PDF_BYTES/1024/1024}MB).`);
     return;
   }
-  showExtractStatus('loading', `Uploading ${file.name}…`);
+  showExtractStatus('loading', `Requesting upload URL for ${file.name}…`);
   try {
-    const pdfBase64 = await fileToBase64(file);
+    const urlRes  = await fetch(`${apiBase}/get-upload-url`, { method: 'POST' });
+    const urlData = await urlRes.json();
+    if (!urlRes.ok) throw new Error(urlData.error || `Could not get an upload URL (${urlRes.status})`);
 
-    const uploadRes  = await fetch(`${apiBase}/upload-pdf`, {
-      method: 'POST',
-      headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ pdf_base64: pdfBase64 })
+    showExtractStatus('loading', `Uploading ${file.name}… 0%`);
+    await uploadFileWithProgress(urlData.uploadUrl, file, (pct) => {
+      showExtractStatus('loading', `Uploading ${file.name}… ${pct}%`);
     });
-    const uploadData = await uploadRes.json();
-    if (!uploadRes.ok) throw new Error(uploadData.error || `Upload failed (${uploadRes.status})`);
 
     showExtractStatus('loading', `Starting extraction of ${file.name}…`);
     const startRes  = await fetch(`${apiBase}/extract-from-s3`, {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ s3Key: uploadData.s3Key })
+      body: JSON.stringify({ s3Key: urlData.s3Key })
     });
     const startData = await startRes.json();
     if (!startRes.ok) throw new Error(startData.error || `Could not start extraction (${startRes.status})`);

@@ -27,6 +27,16 @@ ROLE_NAME="wb-scheduler-lambda-role"
 API_NAME="wb-scheduler-api"
 ANTHROPIC_API_KEY="${1:-${ANTHROPIC_API_KEY:-}}"
 
+# Real Canva content calendar exports run 75-81MB. The async extraction worker
+# (a second, self-invoked run of this same function) downloads the whole PDF
+# from S3 into memory, parses it with pypdf, then makes an Anthropic call with
+# its own 240s timeout — 600s/3008MB gives that comfortable headroom (more
+# Lambda memory also means more CPU, which speeds up pypdf's parsing of a
+# large multi-page PDF). The synchronous API Gateway routes share this same
+# function/config but finish in well under a second regardless.
+LAMBDA_TIMEOUT=600
+LAMBDA_MEMORY=3008
+
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
 
@@ -174,8 +184,8 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
   aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
   aws lambda update-function-configuration \
     --function-name "$FUNCTION_NAME" \
-    --timeout 120 \
-    --memory-size 1024 \
+    --timeout "$LAMBDA_TIMEOUT" \
+    --memory-size "$LAMBDA_MEMORY" \
     --environment "$ENV_VARS" \
     --region "$REGION" >/dev/null
   aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
@@ -188,8 +198,8 @@ else
       --runtime python3.12 \
       --role "$ROLE_ARN" \
       --handler lambda_function.lambda_handler \
-      --timeout 120 \
-      --memory-size 1024 \
+      --timeout "$LAMBDA_TIMEOUT" \
+      --memory-size "$LAMBDA_MEMORY" \
       --zip-file fileb://function.zip \
       --environment "$ENV_VARS" \
       --region "$REGION" >/dev/null 2>/tmp/create-fn-err.log; then
@@ -204,7 +214,7 @@ else
   done
   aws lambda wait function-active --function-name "$FUNCTION_NAME" --region "$REGION"
 fi
-echo "Lambda function $FUNCTION_NAME ready (120s timeout, 1024MB)."
+echo "Lambda function $FUNCTION_NAME ready (${LAMBDA_TIMEOUT}s timeout, ${LAMBDA_MEMORY}MB)."
 
 FUNCTION_ARN=$(aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" --query 'Configuration.FunctionArn' --output text)
 
@@ -330,7 +340,10 @@ fi
 echo "== Smoke test: GET /clients =="
 curl -s "${API_URL}/clients"
 echo ""
-echo "== Smoke test: POST /upload-pdf with a tiny base64 PDF =="
+echo "== Smoke test: POST /get-upload-url (the presigned-URL flow the frontend uses) =="
+curl -s -X POST "${API_URL}/get-upload-url"
+echo ""
+echo "== Smoke test: POST /upload-pdf with a tiny base64 PDF (legacy small-file fallback) =="
 curl -s -X POST "${API_URL}/upload-pdf" -H "Content-Type: application/json" \
   -d '{"pdf_base64":"JVBERi0xLjQKJeLjz9MK"}'
 echo ""
@@ -343,3 +356,6 @@ echo ""
 echo "Note: none of the above exercises a real extraction end-to-end (that needs a real"
 echo "PDF uploaded through the actual frontend). After deploying, upload a real content"
 echo "calendar through https://wbmedia-au.github.io/Scheduler and confirm it completes."
+echo ""
+echo "If you want to definitively verify the presigned-URL fix at the AWS level (bypassing"
+echo "the browser/your office network entirely), run: bash test-presigned-upload.sh"
