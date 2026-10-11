@@ -26,8 +26,8 @@ JOBS_PREFIX = "scheduler/jobs/"
 JOB_ID_RE = re.compile(r"^[0-9a-fA-F-]{1,64}$")
 
 # Lambda synchronous invoke payload limit is 6MB; base64 inflates raw bytes by ~1.33x.
-# Only relevant to the legacy /extract-pdf endpoint. The async /extract-from-s3 flow has
-# no such limit since the PDF bypasses API Gateway entirely via a presigned S3 upload.
+# Shared by /extract-pdf and /upload-pdf, both of which carry the PDF as base64 JSON
+# through API Gateway rather than via a presigned S3 upload.
 MAX_PDF_B64_CHARS = 7_000_000
 
 # Extracted PDF text sent to Anthropic. ~600k chars is roughly 150k tokens, comfortably
@@ -191,6 +191,13 @@ def handle_extract_pdf(event):
 
 
 def handle_get_upload_url():
+    """Presigned-URL flow: the browser PUTs the PDF directly to S3 using this URL,
+    bypassing API Gateway/Lambda entirely (so there's no practical size limit). Still
+    generated and returned for any caller that wants it, but no longer used by the
+    frontend — a presigned PUT to this bucket was confirmed (via a failed extraction job
+    reporting it couldn't read the object back) to return 200 without the object actually
+    landing in S3, for reasons not pinned down despite trying several boto3/presigned-URL
+    configurations. See handle_upload_pdf for the flow the frontend uses instead."""
     key = f"{UPLOADS_PREFIX}{uuid.uuid4()}.pdf"
     try:
         upload_url = s3.generate_presigned_url(
@@ -202,6 +209,46 @@ def handle_get_upload_url():
         return _response(500, {"error": f"Failed to generate upload URL: {e}"})
 
     return _response(200, {"uploadUrl": upload_url, "s3Key": key})
+
+
+def handle_upload_pdf(event):
+    """Receives a base64-encoded PDF directly in the request body (through API Gateway)
+    and writes it to S3 itself, returning the resulting key. This is the flow the frontend
+    actually uses now, in place of the presigned-URL PUT (see handle_get_upload_url's
+    docstring for why). The real cost of this approach: it's bound by the same payload
+    limits as the legacy /extract-pdf endpoint — API Gateway and Lambda's synchronous
+    invoke both cap request bodies well under what a large multi-page Canva export can
+    reach — so large PDFs that worked fine over a presigned URL can hit this limit. Kept
+    deliberately simple (plain base64-in-JSON, no multipart parsing) to be robust."""
+    try:
+        payload = json.loads(event.get("body") or "{}")
+    except json.JSONDecodeError:
+        return _response(400, {"error": "Invalid JSON body"})
+
+    pdf_b64 = payload.get("pdf_base64", "")
+    if not pdf_b64:
+        return _response(400, {"error": "Missing 'pdf_base64' field"})
+
+    if len(pdf_b64) > MAX_PDF_B64_CHARS:
+        return _response(
+            413, {"error": "PDF is too large to upload this way (max ~5MB). Please compress or split it."}
+        )
+
+    try:
+        pdf_bytes = base64.b64decode(pdf_b64, validate=True)
+    except Exception as e:
+        return _response(400, {"error": f"Could not decode 'pdf_base64': {e}"})
+
+    if not pdf_bytes:
+        return _response(400, {"error": "Decoded PDF is empty"})
+
+    key = f"{UPLOADS_PREFIX}{uuid.uuid4()}.pdf"
+    try:
+        s3.put_object(Bucket=S3_BUCKET, Key=key, Body=pdf_bytes, ContentType="application/pdf")
+    except Exception as e:
+        return _response(500, {"error": f"Failed to upload PDF to S3: {e}"})
+
+    return _response(200, {"s3Key": key})
 
 
 def _job_key(job_id):
@@ -396,6 +443,8 @@ def lambda_handler(event, context):
         return handle_extract_pdf(event)
     if path == "/get-upload-url" and method == "POST":
         return handle_get_upload_url()
+    if path == "/upload-pdf" and method == "POST":
+        return handle_upload_pdf(event)
     if path == "/extract-from-s3" and method == "POST":
         return handle_extract_from_s3(event)
     if method == "GET" and path.startswith("/job/"):

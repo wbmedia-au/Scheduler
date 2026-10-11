@@ -326,6 +326,7 @@ const TYPE_EXT       = {
   'REEL':'mp4','VIDEO':'mp4','REEL/VIDEO':'mp4','REEL / VIDEO':'mp4',
   'VIDEO/REEL':'mp4'
 };
+const MAX_PDF_BYTES  = 5 * 1024 * 1024; // ~5MB raw; backend caps base64 at 7,000,000 chars
 
 // ─── STATE ─────────────────────────────────────────────────────────────────────
 let clients   = [];
@@ -479,28 +480,40 @@ function handlePdfFile(file){
 
 function sleep(ms){ return new Promise(resolve => setTimeout(resolve, ms)); }
 
+function fileToBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload  = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = () => reject(new Error('Could not read the file.'));
+    reader.readAsDataURL(file);
+  });
+}
+
 const JOB_POLL_INTERVAL_MS = 3000;
 const JOB_POLL_TIMEOUT_MS  = 5 * 60 * 1000;
 
 async function uploadAndExtractPdf(file){
+  if (file.size > MAX_PDF_BYTES){
+    showExtractStatus('error', `This PDF is ${(file.size/1024/1024).toFixed(1)}MB — please compress or split it (max ~5MB).`);
+    return;
+  }
   showExtractStatus('loading', `Uploading ${file.name}…`);
   try {
-    const urlRes  = await fetch(`${apiBase}/get-upload-url`, { method: 'POST' });
-    const urlData = await urlRes.json();
-    if (!urlRes.ok) throw new Error(urlData.error || 'Could not get an upload URL');
+    const pdfBase64 = await fileToBase64(file);
 
-    console.log('Uploading file:', file.name, 'size:', file.size, 'bytes');
-    console.log('Upload URL:', urlData.uploadUrl.substring(0, 80));
-    const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', body: file });
-    console.log('PUT response status:', putRes.status, 'ok:', putRes.ok);
-    if (!putRes.ok) throw new Error(`Upload to S3 failed (${putRes.status})`);
-    console.log('Upload complete!');
+    const uploadRes  = await fetch(`${apiBase}/upload-pdf`, {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json' },
+      body: JSON.stringify({ pdf_base64: pdfBase64 })
+    });
+    const uploadData = await uploadRes.json();
+    if (!uploadRes.ok) throw new Error(uploadData.error || `Upload failed (${uploadRes.status})`);
 
     showExtractStatus('loading', `Starting extraction of ${file.name}…`);
     const startRes  = await fetch(`${apiBase}/extract-from-s3`, {
       method: 'POST',
       headers: { 'Content-Type':'application/json' },
-      body: JSON.stringify({ s3Key: urlData.s3Key })
+      body: JSON.stringify({ s3Key: uploadData.s3Key })
     });
     const startData = await startRes.json();
     if (!startRes.ok) throw new Error(startData.error || `Could not start extraction (${startRes.status})`);

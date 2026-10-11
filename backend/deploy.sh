@@ -271,7 +271,7 @@ else
   echo "Reusing integration $INTEGRATION_ID"
 fi
 
-for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload-url" "POST /extract-from-s3" "GET /job/{job_id}"; do
+for ROUTE in "GET /clients" "PUT /clients" "POST /extract-pdf" "POST /get-upload-url" "POST /upload-pdf" "POST /extract-from-s3" "GET /job/{job_id}"; do
   EXISTING=$(aws apigatewayv2 get-routes --api-id "$API_ID" --region "$REGION" \
     --query "Items[?RouteKey=='${ROUTE}'].RouteId" --output text)
   if [ -n "$EXISTING" ] && [ "$EXISTING" != "None" ]; then
@@ -330,8 +330,9 @@ fi
 echo "== Smoke test: GET /clients =="
 curl -s "${API_URL}/clients"
 echo ""
-echo "== Smoke test: POST /get-upload-url =="
-curl -s -X POST "${API_URL}/get-upload-url"
+echo "== Smoke test: POST /upload-pdf with a tiny base64 PDF =="
+curl -s -X POST "${API_URL}/upload-pdf" -H "Content-Type: application/json" \
+  -d '{"pdf_base64":"JVBERi0xLjQKJeLjz9MK"}'
 echo ""
 echo "== Smoke test: POST /extract-from-s3 with a bogus key (expect a clean 400) =="
 curl -s -X POST "${API_URL}/extract-from-s3" -H "Content-Type: application/json" -d '{"s3Key":"bogus"}'
