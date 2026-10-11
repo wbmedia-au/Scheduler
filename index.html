@@ -8,31 +8,32 @@
 @import url('https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@400;600;700;800&family=Barlow:wght@300;400;500;600&display=swap');
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 :root{
-  --red:#CC1515;--red-dark:#a51010;--black:#111111;--white:#F8F7F4;
-  --g100:#F0EFEC;--g200:#E0DFDB;--g400:#9A9990;--g600:#5C5B56;
-  --border:#DDDCDA;--green:#2e7d32;--gl:#E8F5E9;--gb:#a5d6a7;
+  --red:#690606;--red-dark:#4a0404;--black:#2a1f1f;--white:#f9f6f2;
+  --g100:#f0ebe4;--g200:#e8e0d8;--g400:#a09080;--g600:#6b5c52;
+  --border:#dfd6cd;--green:#2e7d32;--gl:#E8F5E9;--gb:#a5d6a7;
+  --oyster:#dfd6cd;--cream:#f9f6f2;--wine:#690606;
 }
-body{font-family:'Barlow',sans-serif;background:var(--white);color:var(--black);min-height:100vh;font-size:14px}
-header{background:var(--black);border-bottom:3px solid var(--red);display:flex;align-items:center;justify-content:space-between;padding:0 32px}
-.logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:22px;color:var(--white);letter-spacing:.04em;padding:16px 0}
-.logo span{color:var(--red)}
+body{font-family:'Figtree',sans-serif;background:var(--cream);color:var(--black);min-height:100vh;font-size:14px}
+header{background:var(--cream);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 32px}
+.logo{font-family:'Montserrat',sans-serif;font-weight:300;font-size:18px;color:var(--black);letter-spacing:.25em;padding:18px 0;text-transform:uppercase}
+.logo span{color:var(--wine);font-weight:600}
 nav{display:flex}
-nav button{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:13px;letter-spacing:.1em;text-transform:uppercase;background:none;border:none;color:var(--g400);cursor:pointer;padding:20px;border-bottom:3px solid transparent;margin-bottom:-3px;transition:.15s}
-nav button:hover{color:var(--white)}
-nav button.active{color:var(--white);border-bottom-color:var(--red)}
+nav button{font-family:'Montserrat',sans-serif;font-weight:500;font-size:11px;letter-spacing:.15em;text-transform:uppercase;background:none;border:none;color:var(--g600);cursor:pointer;padding:20px;border-bottom:2px solid transparent;margin-bottom:-1px;transition:.15s}
+nav button:hover{color:var(--black)}
+nav button.active{color:var(--wine);border-bottom-color:var(--wine)}
 .sync-pill{font-size:11px;letter-spacing:.06em;text-transform:uppercase;padding:4px 10px;border-radius:2px;font-weight:600;white-space:nowrap}
-.sync-pill.ok{background:rgba(46,125,50,.2);color:#81c784}
+.sync-pill.ok{background:rgba(105,6,6,.08);color:var(--wine)}
 .sync-pill.err{background:rgba(198,40,40,.2);color:#ef9a9a}
 .sync-pill.busy{background:rgba(255,255,255,.08);color:var(--g400)}
 .view{display:none;max-width:1140px;margin:0 auto;padding:28px 24px 60px}
 .view.active{display:block}
-.step{margin-bottom:18px;background:#fff;border:1px solid var(--border);border-radius:4px;overflow:hidden}
-.step-header{background:var(--black);padding:11px 20px;display:flex;align-items:center;gap:14px}
-.step-num{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:11px;letter-spacing:.1em;color:var(--red);background:rgba(204,21,21,.12);border:1px solid rgba(204,21,21,.3);border-radius:2px;padding:2px 8px;text-transform:uppercase}
-.step-title{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.06em;color:var(--white);text-transform:uppercase}
+.step{margin-bottom:18px;background:#fff;border:1px solid var(--border);border-radius:3px;overflow:hidden}
+.step-header{background:var(--oyster);padding:11px 20px;display:flex;align-items:center;gap:14px;border-bottom:1px solid var(--border)}
+.step-num{font-family:'Montserrat',sans-serif;font-weight:600;font-size:10px;letter-spacing:.15em;color:var(--wine);background:rgba(105,6,6,.08);border:1px solid rgba(105,6,6,.2);border-radius:2px;padding:2px 8px;text-transform:uppercase}
+.step-title{font-family:'Montserrat',sans-serif;font-weight:600;font-size:13px;letter-spacing:.12em;color:var(--black);text-transform:uppercase}
 .step-body{padding:20px}
-label{display:block;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--g600);margin-bottom:5px}
-input[type=text],input[type=time],input[type=url],input[type=password],select{width:100%;border:1px solid var(--border);border-radius:3px;padding:9px 12px;font-size:13px;font-family:'Barlow',sans-serif;color:var(--black);background:var(--white);outline:none;transition:.15s}
+label{display:block;font-size:10px;font-weight:600;letter-spacing:.12em;text-transform:uppercase;color:var(--g600);margin-bottom:5px;font-family:'Montserrat',sans-serif}
+input[type=text],input[type=time],input[type=url],input[type=password],select{width:100%;border:1px solid var(--border);border-radius:2px;padding:9px 12px;font-size:13px;font-family:'Figtree',sans-serif;color:var(--black);background:#fff;outline:none;transition:.15s}
 input:focus,select:focus{border-color:var(--red)}
 .g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:14px}
 .g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
@@ -40,10 +41,10 @@ input:focus,select:focus{border-color:var(--red)}
 .hint{font-size:11px;color:var(--g400);margin-top:4px;line-height:1.5}
 code{font-family:monospace;background:var(--g100);padding:1px 5px;border-radius:2px;font-size:11px}
 .upload-zone{border:2px dashed var(--border);border-radius:4px;padding:32px 24px;text-align:center;cursor:pointer;transition:.2s;position:relative}
-.upload-zone:hover,.upload-zone.dragover{border-color:var(--red);background:#fff5f5}
+.upload-zone:hover,.upload-zone.dragover{border-color:var(--wine);background:rgba(105,6,6,.03)}
 .upload-zone input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
 .u-icon{font-size:26px;margin-bottom:8px;display:block}
-.u-label{font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.05em;text-transform:uppercase;margin-bottom:4px}
+.u-label{font-family:'Montserrat',sans-serif;font-weight:600;font-size:14px;letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
 .u-sub{font-size:12px;color:var(--g400)}
 .status-bar{display:none;align-items:center;gap:10px;padding:10px 14px;border-radius:3px;font-size:13px;font-weight:500;margin-top:12px}
 .status-bar.loading{background:#FFF8E1;color:#7a5900;display:flex}
@@ -51,7 +52,7 @@ code{font-family:monospace;background:var(--g100);padding:1px 5px;border-radius:
 .status-bar.error{background:#FFEBEE;color:#c62828;display:flex}
 .spinner{width:15px;height:15px;border:2px solid currentColor;border-top-color:transparent;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
 @keyframes spin{to{transform:rotate(360deg)}}
-.btn{display:inline-flex;align-items:center;gap:7px;padding:9px 20px;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:14px;letter-spacing:.08em;text-transform:uppercase;cursor:pointer;border:none;transition:.15s}
+.btn{display:inline-flex;align-items:center;gap:7px;padding:10px 22px;border-radius:2px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;cursor:pointer;border:none;transition:.15s}
 .btn-primary{background:var(--red);color:#fff}.btn-primary:hover{background:var(--red-dark)}
 .btn-primary:disabled{background:var(--g200);color:var(--g400);cursor:not-allowed}
 .btn-ghost{background:transparent;color:var(--g600);border:1px solid var(--border)}.btn-ghost:hover{border-color:var(--g400);color:var(--black)}
@@ -120,22 +121,22 @@ td{padding:7px 12px;vertical-align:middle}
 .plat-check.on{background:rgba(204,21,21,.08);border-color:rgba(204,21,21,.3);color:var(--red);font-weight:600}
 .plat-check input{display:none}
 
-.pw-overlay{position:fixed;inset:0;background:var(--black);z-index:1000;display:flex;align-items:center;justify-content:center}
-.pw-box{background:#1a1a1a;border:1px solid var(--border);border-radius:6px;padding:40px;width:100%;max-width:400px;text-align:center}
-.pw-logo{font-family:'Barlow Condensed',sans-serif;font-weight:800;font-size:28px;color:var(--white);margin-bottom:4px}
+.pw-overlay{position:fixed;inset:0;background:var(--cream);z-index:1000;display:flex;align-items:center;justify-content:center}
+.pw-box{background:#fff;border:1px solid var(--border);border-radius:3px;padding:48px;width:100%;max-width:380px;text-align:center;box-shadow:0 4px 40px rgba(105,6,6,.06)}
+.pw-logo{font-family:'Montserrat',sans-serif;font-weight:300;font-size:22px;color:var(--black);margin-bottom:4px;letter-spacing:.25em;text-transform:uppercase}
 .pw-logo span{color:var(--red)}
-.pw-sub{font-size:12px;color:var(--g400);margin-bottom:28px;letter-spacing:.1em;text-transform:uppercase}
-.pw-input{width:100%;border:1px solid var(--border);border-radius:3px;padding:12px;font-size:14px;font-family:'Barlow',sans-serif;color:var(--white);background:#111;outline:none;text-align:center;letter-spacing:.2em;margin-bottom:12px}
-.pw-input:focus{border-color:var(--red)}
-.pw-btn{width:100%;padding:12px;background:var(--red);color:#fff;border:none;border-radius:3px;font-family:'Barlow Condensed',sans-serif;font-weight:700;font-size:16px;letter-spacing:.1em;text-transform:uppercase;cursor:pointer}
-.pw-btn:hover{background:var(--red-dark)}
+.pw-sub{font-size:10px;color:var(--g400);margin-bottom:32px;letter-spacing:.2em;text-transform:uppercase;font-family:'Montserrat',sans-serif}
+.pw-input{width:100%;border:1px solid var(--border);border-radius:2px;padding:12px;font-size:14px;font-family:'Figtree',sans-serif;color:var(--black);background:var(--cream);outline:none;text-align:center;letter-spacing:.2em;margin-bottom:12px}
+.pw-input:focus{border-color:var(--wine)}
+.pw-btn{width:100%;padding:13px;background:var(--wine);color:#fff;border:none;border-radius:2px;font-family:'Montserrat',sans-serif;font-weight:600;font-size:12px;letter-spacing:.15em;text-transform:uppercase;cursor:pointer}
+.pw-btn:hover{background:var(--red-dark);opacity:.9}
 .pw-error{color:#ef9a9a;font-size:12px;margin-top:8px;display:none}
 </style>
 </head>
 <body>
 <div class="pw-overlay" id="pwOverlay">
   <div class="pw-box">
-    <div class="pw-logo">WB<span>.</span> <span style="font-size:16px;font-weight:400;color:var(--g400);letter-spacing:.12em">MEDIA</span></div>
+    <div class="pw-logo">WB <span style="color:var(--wine)">·</span> MEDIA</div>
     <div class="pw-sub">Social Pilot Scheduler</div>
     <input type="password" class="pw-input" id="pwInput" placeholder="Enter password" onkeydown="if(event.key==='Enter')checkPw()"/>
     <button class="pw-btn" onclick="checkPw()">Access Tool</button>
