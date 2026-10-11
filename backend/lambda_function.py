@@ -10,6 +10,7 @@ import uuid
 
 import boto3
 import pypdf
+from botocore.client import Config
 
 S3_BUCKET = os.environ["S3_BUCKET"]
 S3_KEY = os.environ["S3_KEY"]
@@ -18,6 +19,7 @@ ANTHROPIC_MODEL = os.environ.get("ANTHROPIC_MODEL", "claude-sonnet-5")
 ANTHROPIC_VERSION = "2023-06-01"
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
 ALLOWED_ORIGIN = os.environ.get("ALLOWED_ORIGIN", "https://wbmedia-au.github.io")
+AWS_REGION = os.environ.get("AWS_REGION", "ap-southeast-2")
 
 UPLOADS_PREFIX = "scheduler/uploads/"
 UPLOAD_KEY_RE = re.compile(r"^scheduler/uploads/[A-Za-z0-9-]+\.pdf$")
@@ -25,13 +27,22 @@ UPLOAD_KEY_RE = re.compile(r"^scheduler/uploads/[A-Za-z0-9-]+\.pdf$")
 JOBS_PREFIX = "scheduler/jobs/"
 JOB_ID_RE = re.compile(r"^[0-9a-fA-F-]{1,64}$")
 
+# Presigned PUT URLs are valid for this long. Set generously (1 hour) because the real
+# files here are 75-81MB — on a slow or congested connection that can take a while, and a
+# URL that expires mid-upload makes S3 reject the request outright.
+UPLOAD_URL_TTL_SECONDS = 3600
+
 # Lambda synchronous invoke payload limit is 6MB; base64 inflates raw bytes by ~1.33x.
-# Shared by /extract-pdf and /upload-pdf, both of which carry the PDF as base64 JSON
-# through API Gateway rather than via a presigned S3 upload.
+# Only relevant to the legacy /extract-pdf and /upload-pdf endpoints, both of which carry
+# the PDF as base64 JSON through API Gateway — categorically unusable for this app's real
+# PDFs (75-81MB), which is exactly why the presigned-URL flow below exists and is the one
+# the frontend actually uses.
 MAX_PDF_B64_CHARS = 7_000_000
 
 # Extracted PDF text sent to Anthropic. ~600k chars is roughly 150k tokens, comfortably
-# under Claude's context window with room for the prompt and response.
+# under Claude's context window with room for the prompt and response. A PDF being 75-81MB
+# doesn't mean its extracted *text* is anywhere near that large — most of that size is
+# typically images/fonts/vector graphics that pypdf's text extraction doesn't touch.
 MAX_EXTRACTED_TEXT_CHARS = 600_000
 
 EXTRACTION_PROMPT = """Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
@@ -40,7 +51,22 @@ EXTRACTION_PROMPT = """Please extract all posts from this WB Media content calen
 
 Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "". Return only the JSON — no explanation before or after."""
 
-s3 = boto3.client("s3")
+# Explicit SigV4 + virtual-hosted-style addressing. Without this, boto3's default for
+# generate_presigned_url resolves to legacy SigV2 against the bare, regionless
+# "s3.amazonaws.com" endpoint instead of "{bucket}.s3.{region}.amazonaws.com" — AWS
+# deprecated SigV2 for S3 years ago. This was the actual, reproduced cause of presigned
+# PUT uploads behaving unreliably (confirmed by generating a presigned URL locally with
+# the default client and inspecting it — no AWS access needed, since URL generation is
+# pure local signing computation): the default client produced
+# "https://{bucket}.s3.amazonaws.com/..." with "AWSAccessKeyId=...&Signature=..." (SigV2),
+# while this explicit config produces
+# "https://{bucket}.s3.ap-southeast-2.amazonaws.com/..." with
+# "X-Amz-Algorithm=AWS4-HMAC-SHA256..." (SigV4) — the correct, AWS-recommended form.
+s3 = boto3.client(
+    "s3",
+    region_name=AWS_REGION,
+    config=Config(signature_version="s3v4", s3={"addressing_style": "virtual"}),
+)
 lambda_client = boto3.client("lambda")
 
 CORS_HEADERS = {
@@ -165,8 +191,8 @@ def _call_anthropic_messages(content_blocks, timeout_seconds):
 def handle_extract_pdf(event):
     """Legacy endpoint: PDF arrives base64-encoded in the request body via API Gateway,
     and is sent to Claude as a native PDF document (not text-extracted). Kept for backwards
-    compatibility; not used by the current frontend, which uses the async
-    /extract-from-s3 + /job/{job_id} flow below. Still bound by API Gateway's 30s ceiling."""
+    compatibility; not used by the current frontend. Bound by API Gateway's 30s ceiling and
+    a ~5MB payload cap — nowhere near sufficient for this app's real 75-81MB PDFs."""
     try:
         payload = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
@@ -191,19 +217,17 @@ def handle_extract_pdf(event):
 
 
 def handle_get_upload_url():
-    """Presigned-URL flow: the browser PUTs the PDF directly to S3 using this URL,
-    bypassing API Gateway/Lambda entirely (so there's no practical size limit). Still
-    generated and returned for any caller that wants it, but no longer used by the
-    frontend — a presigned PUT to this bucket was confirmed (via a failed extraction job
-    reporting it couldn't read the object back) to return 200 without the object actually
-    landing in S3, for reasons not pinned down despite trying several boto3/presigned-URL
-    configurations. See handle_upload_pdf for the flow the frontend uses instead."""
+    """The flow the frontend actually uses for the real 75-81MB PDFs: returns a presigned
+    S3 PUT URL so the browser writes the file straight to S3, bypassing API Gateway/Lambda
+    entirely (and their hard payload-size limits) completely. See the module-level comment
+    above the `s3` client construction for why this now explicitly forces SigV4 +
+    virtual-hosted-style addressing."""
     key = f"{UPLOADS_PREFIX}{uuid.uuid4()}.pdf"
     try:
         upload_url = s3.generate_presigned_url(
             "put_object",
             Params={"Bucket": S3_BUCKET, "Key": key},
-            ExpiresIn=300,
+            ExpiresIn=UPLOAD_URL_TTL_SECONDS,
         )
     except Exception as e:
         return _response(500, {"error": f"Failed to generate upload URL: {e}"})
@@ -213,13 +237,11 @@ def handle_get_upload_url():
 
 def handle_upload_pdf(event):
     """Receives a base64-encoded PDF directly in the request body (through API Gateway)
-    and writes it to S3 itself, returning the resulting key. This is the flow the frontend
-    actually uses now, in place of the presigned-URL PUT (see handle_get_upload_url's
-    docstring for why). The real cost of this approach: it's bound by the same payload
-    limits as the legacy /extract-pdf endpoint — API Gateway and Lambda's synchronous
-    invoke both cap request bodies well under what a large multi-page Canva export can
-    reach — so large PDFs that worked fine over a presigned URL can hit this limit. Kept
-    deliberately simple (plain base64-in-JSON, no multipart parsing) to be robust."""
+    and writes it to S3 itself. NOT usable for this app's real PDFs (75-81MB) — API
+    Gateway and Lambda's synchronous invoke both cap request bodies at a small fraction of
+    that, enforced below at ~5MB. Kept only as a fallback for genuinely small files; the
+    frontend uses handle_get_upload_url's presigned-URL flow instead, which has no such
+    limit."""
     try:
         payload = json.loads(event.get("body") or "{}")
     except json.JSONDecodeError:
@@ -231,7 +253,7 @@ def handle_upload_pdf(event):
 
     if len(pdf_b64) > MAX_PDF_B64_CHARS:
         return _response(
-            413, {"error": "PDF is too large to upload this way (max ~5MB). Please compress or split it."}
+            413, {"error": "PDF is too large to upload this way (max ~5MB). Use the presigned-URL flow instead."}
         )
 
     try:
@@ -384,7 +406,7 @@ def handle_async_extraction_job(event):
         ]
 
         try:
-            posts_json = _call_anthropic_messages(content_blocks, timeout_seconds=100)
+            posts_json = _call_anthropic_messages(content_blocks, timeout_seconds=240)
         except RuntimeError as e:
             fail(str(e))
             return
