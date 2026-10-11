@@ -489,8 +489,12 @@ async function uploadAndExtractPdf(file){
     const urlData = await urlRes.json();
     if (!urlRes.ok) throw new Error(urlData.error || 'Could not get an upload URL');
 
+    console.log('Uploading file:', file.name, 'size:', file.size, 'bytes');
+    console.log('Upload URL:', urlData.uploadUrl.substring(0, 80));
     const putRes = await fetch(urlData.uploadUrl, { method: 'PUT', body: file });
+    console.log('PUT response status:', putRes.status, 'ok:', putRes.ok);
     if (!putRes.ok) throw new Error(`Upload to S3 failed (${putRes.status})`);
+    console.log('Upload complete!');
 
     showExtractStatus('loading', `Starting extraction of ${file.name}…`);
     const startRes  = await fetch(`${apiBase}/extract-from-s3`, {
