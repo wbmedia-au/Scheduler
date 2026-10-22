@@ -4,6 +4,7 @@ import io
 import json
 import os
 import re
+import unicodedata
 import urllib.error
 import urllib.request
 import uuid
@@ -45,40 +46,141 @@ MAX_PDF_B64_CHARS = 7_000_000
 # typically images/fonts/vector graphics that pypdf's text extraction doesn't touch.
 MAX_EXTRACTED_TEXT_CHARS = 600_000
 
+# ─── CAPTION NORMALIZATION ─────────────────────────────────────────────────────────
 # The async extraction path (see handle_async_extraction_job) only ever sends Claude the
-# pypdf-extracted *text* of the PDF, never the page images — see the README's "text
-# extraction vs. native PDF reading" caveat for why. pypdf.extract_text() inserts a line
-# break at every physical line Canva laid the text box out on, which includes ordinary
-# word-wrapping, not just genuine paragraph breaks. Without the explicit instruction below,
-# Claude was copying those incidental line breaks straight into the caption field, so a
-# caption that reads as one flowing sentence in Canva came out of the CSV broken mid-sentence
-# onto several hard-coded lines — a real bug staff hit when the resulting post went out
-# fragmented instead of reading naturally. The CAPTION FORMATTING section (with a worked
-# example drawn from an actual reported case) tells Claude to reflow wrapped lines into
-# continuous prose and only keep line breaks at genuine paragraph boundaries.
+# pypdf-extracted *text* of the PDF, never the page images (see the README's "text
+# extraction vs. native PDF reading" caveat for why). pypdf.extract_text() inserts a line
+# break at every physical line Canva's text box wrapped to, which includes ordinary
+# word-wrapping, not just genuine paragraph breaks — e.g. "flavours across\nAsia, our new
+# menu" is one sentence that just happened to wrap there. Relying on Claude's own judgement
+# to reflow this (an earlier version of this prompt tried exactly that) wasn't reliable
+# enough once staff started seeing broken captions in production, so normalize_caption()
+# below makes the fix deterministic: it runs on every extracted caption regardless of how
+# Claude formatted it, using a fixed rule rather than asking the model to get it right.
+#
+# Emoji/pictograph detection here uses Unicode general categories, not a hardcoded emoji
+# list, since the actual set of emoji used in content calendars (✨ 🥢 📍 ☕ 🍸 and dozens more)
+# changes with every client. Nearly every standalone emoji used in practice falls under
+# category "So" (Symbol, other); skin-tone modifiers are "Sk"; zero-width joiners and
+# variation selectors (which can trail an emoji, e.g. the U+FE0F in some "❤️" renderings)
+# are "Cf"/"Mn" and are skipped over when looking for the "real" leading/trailing character.
+_SKIP_WHEN_SCANNING_EDGE_CHAR = {"Mn", "Cf"}  # combining marks / format chars (ZWJ, variation selectors)
+_EMOJI_CATEGORIES = {"So", "Sk"}  # symbol-other (nearly all emoji) / symbol-modifier (skin tones)
+
+
+def _is_emoji_char(ch):
+    return unicodedata.category(ch) in _EMOJI_CATEGORIES
+
+
+def _last_significant_char(s):
+    for ch in reversed(s):
+        if unicodedata.category(ch) not in _SKIP_WHEN_SCANNING_EDGE_CHAR:
+            return ch
+    return s[-1] if s else ""
+
+
+def _first_significant_char(s):
+    for ch in s:
+        if unicodedata.category(ch) not in _SKIP_WHEN_SCANNING_EDGE_CHAR:
+            return ch
+    return s[0] if s else ""
+
+
+def _ends_like_a_sentence(line):
+    if not line:
+        return False
+    ch = _last_significant_char(line)
+    return ch in ".!?" or _is_emoji_char(ch)
+
+
+def _starts_with_emoji(line):
+    if not line:
+        return False
+    return _is_emoji_char(_first_significant_char(line))
+
+
+def _looks_letter_spaced(line):
+    """True when a line looks like 'Y o u r  c o f f e e' — some Canva fonts make pypdf
+    extract text with a space inserted between every letter. Requires a handful of tokens
+    so short, legitimate lines (e.g. "I ❤ NY") aren't misdetected."""
+    tokens = [t for t in line.split(" ") if t]
+    if len(tokens) < 4:
+        return False
+    single_char_tokens = sum(1 for t in tokens if len(t) == 1)
+    return single_char_tokens / len(tokens) >= 0.6
+
+
+def _repair_letter_spacing(line):
+    """Collapses a letter-spaced line back into words: a run of 2+ spaces is the real
+    word boundary (kept as one space), and the single spaces letter-spacing inserted
+    between individual characters are removed."""
+    if not _looks_letter_spaced(line):
+        return line
+    marked = re.sub(r" {2,}", "\x00", line)
+    return marked.replace(" ", "").replace("\x00", " ")
+
+
+def _clean_line(line):
+    line = line.strip()
+    line = _repair_letter_spacing(line)
+    return re.sub(r" {2,}", " ", line)
+
+
+def normalize_caption(text):
+    """Rejoins soft-wrapped lines from pypdf's PDF text extraction back into natural,
+    flowing prose, and repairs Canva-font letter-spacing artifacts. Deterministic — see
+    the module comment above for why this isn't left to the extraction model alone.
+
+    Rule: join line N to line N+1 with a single space, UNLESS line N ends with
+    . ! ? or an emoji/pictograph, or line N+1 starts with an emoji/pictograph — those
+    cases keep the line break, since they mark a genuine new sentence or new emoji-led
+    line (the pattern every caption in this app's content calendars follows: a body
+    paragraph, then short emoji-led lines for the offer, the call-to-action, and the
+    location). Blank lines (intentional paragraph breaks already in the source) are
+    always preserved as their own line and never joined across.
+    """
+    if not text:
+        return text
+
+    lines = [_clean_line(line) for line in text.split("\n")]
+
+    out_lines = []
+    for line in lines:
+        if not out_lines:
+            out_lines.append(line)
+            continue
+
+        prev = out_lines[-1]
+
+        if prev == "" or line == "":
+            # A blank line is an intentional paragraph break already present in the
+            # source — keep it standalone, never join across it in either direction.
+            out_lines.append(line)
+            continue
+
+        if _ends_like_a_sentence(prev) or _starts_with_emoji(line):
+            out_lines.append(line)
+        else:
+            out_lines[-1] = re.sub(r" +", " ", f"{prev} {line}").strip()
+
+    return "\n".join(out_lines)
+
+
+def _normalize_posts_captions(posts):
+    """Applies normalize_caption() to every post's caption in place. Called on every
+    extraction result (both the legacy native-PDF path and the real async text-extraction
+    path) so the fix applies regardless of which path produced the posts."""
+    for post in posts:
+        if isinstance(post, dict) and isinstance(post.get("caption"), str):
+            post["caption"] = normalize_caption(post["caption"])
+    return posts
+
+
 EXTRACTION_PROMPT = """Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
 
 {"posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags","dropbox_url":"https://www.dropbox.com/..."}]}
 
-Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags.
-
-CAPTION FORMATTING — read carefully, this has caused real bugs: the PDF text below was extracted one physical line at a time, so most of its line breaks are just where Canva's text box happened to wrap a line, not an intentional line break the client wrote. If you copy those line breaks straight into the caption field, the caption posts to Instagram/Facebook broken apart mid-sentence instead of reading naturally. Reconstruct each caption the way a person actually wrote it:
-- Within one paragraph or thought, join wrapped lines back into continuous, naturally-flowing text separated by a single space — never a line break — exactly as you'd read it aloud.
-- Only insert a real line break (as \\n in the JSON string) between genuinely separate parts of the caption. These captions are consistently structured as short, separate lines: the main hook/body copy (usually its own paragraph, even if it spans several wrapped PDF lines), then a members'-offer line (e.g. starting with an emoji then "Members enjoy/receive X% off..."), then a call-to-action line (e.g. "Explore/Discover/Check out ... at rwc.org.au"), then a location/address line (usually starting with 📍). Use sentence structure and punctuation to judge where thoughts actually end, not where the PDF happened to wrap a line.
-- Worked example — raw PDF text extracted for one real post looked like this (every line break here is just word-wrap, not intentional):
-    "Big screens, cold beers and your favourite people. That's a good game day in
-    our books! 🍻 🏉
-    Whether you're backing your team, catching the latest UFC action or just
-    looking for an excuse to get your mates together, Rogues Sports Bar is the
-    place to be.
-    🍺 Members enjoy 20% off at all Revesby Workers' Club restaurants and bars, or
-    40% off when paying with points.
-    🏉 Check out what's happening at Rogues Sports Bar at rwc.org.au
-    📍 Revesby Workers' Club, 2B Brett St, Revesby."
-  That should become this caption value (shown here with \\n marking the only real line breaks, between the four distinct parts):
-    "Big screens, cold beers and your favourite people. That's a good game day in our books! 🍻🏉 Whether you're backing your team, catching the latest UFC action or just looking for an excuse to get your mates together, Rogues Sports Bar is the place to be.\\n\\n🍺 Members enjoy 20% off at all Revesby Workers' Club restaurants and bars, or 40% off when paying with points.\\n\\n🏉 Check out what's happening at Rogues Sports Bar at rwc.org.au\\n\\n📍 Revesby Workers' Club, 2B Brett St, Revesby."
-
-For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "". Return only the JSON — no explanation before or after."""
+Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. Captions in the PDF are wrapped to fit a text box — rejoin wrapped lines into full sentences and keep line breaks only where the caption starts a new sentence or emoji-led line. For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "". Return only the JSON — no explanation before or after."""
 
 # Explicit SigV4 + virtual-hosted-style addressing. Without this, boto3's default for
 # generate_presigned_url resolves to legacy SigV2 against the bare, regionless
@@ -242,6 +344,7 @@ def handle_extract_pdf(event):
         posts_json = _call_anthropic_messages(content_blocks, timeout_seconds=25)
     except RuntimeError as e:
         return _response(502, {"error": str(e)})
+    _normalize_posts_captions(posts_json.get("posts", []))
     return _response(200, posts_json)
 
 
@@ -439,6 +542,8 @@ def handle_async_extraction_job(event):
         except RuntimeError as e:
             fail(str(e))
             return
+
+        _normalize_posts_captions(posts_json.get("posts", []))
 
         try:
             _write_job(
