@@ -10,7 +10,8 @@
 #      into the same directory as this script.
 #   2. bash deploy.sh sk-ant-api03-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx
 #      (pass your Anthropic API key as the first argument; omit it only if you've already
-#      set it on the function on a previous run and just want to redeploy code/infra)
+#      deployed once before — this script will reuse the key already configured on the
+#      live function)
 #
 # Safe to re-run: it updates existing resources instead of failing on them.
 
@@ -173,9 +174,48 @@ aws s3api put-bucket-cors --bucket "$S3_BUCKET" --cors-configuration file:///tmp
 echo "Bucket CORS updated (existing rules preserved, PUT from ${ALLOWED_ORIGIN} added)."
 
 echo "== Lambda function =="
-ENV_VARS="Variables={S3_BUCKET=${S3_BUCKET},S3_KEY=${S3_KEY},ALLOWED_ORIGIN=${ALLOWED_ORIGIN},ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}}"
-
+FUNCTION_EXISTS=0
 if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >/dev/null 2>&1; then
+  FUNCTION_EXISTS=1
+fi
+
+# CloudShell does not persist shell environment variables between sessions (only files
+# under $HOME survive), so a fresh session re-running this script with no argument will
+# always see ANTHROPIC_API_KEY as empty here, even though the *deployed* function still
+# has a real key configured from a previous run. Without this fallback, that empty value
+# both risks silently blanking out the working key on update, and (worse) used to crash
+# the AWS CLI outright: its --environment shorthand-syntax parser can't handle a trailing
+# "KEY=" with nothing after it, failing with a ParamValidation error before anything else
+# runs. Reusing the live value here means "bash deploy.sh" with no argument just works for
+# a routine code-only redeploy, the common case after pulling a backend code update.
+if [ -z "$ANTHROPIC_API_KEY" ] && [ "$FUNCTION_EXISTS" -eq 1 ]; then
+  EXISTING_KEY=$(aws lambda get-function-configuration \
+    --function-name "$FUNCTION_NAME" \
+    --region "$REGION" \
+    --query 'Environment.Variables.ANTHROPIC_API_KEY' \
+    --output text 2>/dev/null || echo "")
+  if [ -n "$EXISTING_KEY" ] && [ "$EXISTING_KEY" != "None" ]; then
+    ANTHROPIC_API_KEY="$EXISTING_KEY"
+    echo "No Anthropic key passed — reusing the key already configured on the live function."
+  fi
+fi
+
+# Built as a JSON document rather than the AWS CLI's "Variables={a=b,c=d}" shorthand
+# syntax: that shorthand parser rejects a key with an empty value when it's last in the
+# list (the ANTHROPIC_API_KEY="" case, if the lookup above still finds nothing — e.g. a
+# genuinely first-ever deploy with no key passed), whereas plain JSON handles an empty
+# string value without issue.
+ENV_JSON=$(python3 -c "
+import json, sys
+print(json.dumps({'Variables': {
+    'S3_BUCKET': sys.argv[1],
+    'S3_KEY': sys.argv[2],
+    'ALLOWED_ORIGIN': sys.argv[3],
+    'ANTHROPIC_API_KEY': sys.argv[4],
+}}))
+" "$S3_BUCKET" "$S3_KEY" "$ALLOWED_ORIGIN" "$ANTHROPIC_API_KEY")
+
+if [ "$FUNCTION_EXISTS" -eq 1 ]; then
   echo "Function exists, updating code + config..."
   aws lambda update-function-code \
     --function-name "$FUNCTION_NAME" \
@@ -186,7 +226,7 @@ if aws lambda get-function --function-name "$FUNCTION_NAME" --region "$REGION" >
     --function-name "$FUNCTION_NAME" \
     --timeout "$LAMBDA_TIMEOUT" \
     --memory-size "$LAMBDA_MEMORY" \
-    --environment "$ENV_VARS" \
+    --environment "$ENV_JSON" \
     --region "$REGION" >/dev/null
   aws lambda wait function-updated --function-name "$FUNCTION_NAME" --region "$REGION"
 else
@@ -201,7 +241,7 @@ else
       --timeout "$LAMBDA_TIMEOUT" \
       --memory-size "$LAMBDA_MEMORY" \
       --zip-file fileb://function.zip \
-      --environment "$ENV_VARS" \
+      --environment "$ENV_JSON" \
       --region "$REGION" >/dev/null 2>/tmp/create-fn-err.log; then
       break
     fi
@@ -329,8 +369,8 @@ echo "================================================================"
 echo ""
 
 if [ -z "$ANTHROPIC_API_KEY" ]; then
-  echo "NOTE: ANTHROPIC_API_KEY was not set on this run — if it's not already set from a"
-  echo "previous deploy, extraction jobs will fail with a clear error until you run:"
+  echo "NOTE: ANTHROPIC_API_KEY is not set — extraction jobs will fail with a clear error"
+  echo "until you run:"
   echo "  bash deploy.sh sk-ant-api03-xxxx"
   echo "or:"
   echo "  ANTHROPIC_API_KEY=sk-ant-... bash set-api-key.sh"
