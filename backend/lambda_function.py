@@ -45,11 +45,40 @@ MAX_PDF_B64_CHARS = 7_000_000
 # typically images/fonts/vector graphics that pypdf's text extraction doesn't touch.
 MAX_EXTRACTED_TEXT_CHARS = 600_000
 
+# The async extraction path (see handle_async_extraction_job) only ever sends Claude the
+# pypdf-extracted *text* of the PDF, never the page images — see the README's "text
+# extraction vs. native PDF reading" caveat for why. pypdf.extract_text() inserts a line
+# break at every physical line Canva laid the text box out on, which includes ordinary
+# word-wrapping, not just genuine paragraph breaks. Without the explicit instruction below,
+# Claude was copying those incidental line breaks straight into the caption field, so a
+# caption that reads as one flowing sentence in Canva came out of the CSV broken mid-sentence
+# onto several hard-coded lines — a real bug staff hit when the resulting post went out
+# fragmented instead of reading naturally. The CAPTION FORMATTING section (with a worked
+# example drawn from an actual reported case) tells Claude to reflow wrapped lines into
+# continuous prose and only keep line breaks at genuine paragraph boundaries.
 EXTRACTION_PROMPT = """Please extract all posts from this WB Media content calendar PDF and return the data in this exact JSON format with no extra text or markdown:
 
 {"posts":[{"label":"WEEK 1: POST 01","date":"13.05.26","post_type":"CAROUSEL","caption":"full caption including all emojis and hashtags","dropbox_url":"https://www.dropbox.com/..."}]}
 
-Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags. For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "". Return only the JSON — no explanation before or after."""
+Include every post slide. Skip cover pages, grid previews and feedback slides. Include complete captions with all emojis and hashtags.
+
+CAPTION FORMATTING — read carefully, this has caused real bugs: the PDF text below was extracted one physical line at a time, so most of its line breaks are just where Canva's text box happened to wrap a line, not an intentional line break the client wrote. If you copy those line breaks straight into the caption field, the caption posts to Instagram/Facebook broken apart mid-sentence instead of reading naturally. Reconstruct each caption the way a person actually wrote it:
+- Within one paragraph or thought, join wrapped lines back into continuous, naturally-flowing text separated by a single space — never a line break — exactly as you'd read it aloud.
+- Only insert a real line break (as \\n in the JSON string) between genuinely separate parts of the caption. These captions are consistently structured as short, separate lines: the main hook/body copy (usually its own paragraph, even if it spans several wrapped PDF lines), then a members'-offer line (e.g. starting with an emoji then "Members enjoy/receive X% off..."), then a call-to-action line (e.g. "Explore/Discover/Check out ... at rwc.org.au"), then a location/address line (usually starting with 📍). Use sentence structure and punctuation to judge where thoughts actually end, not where the PDF happened to wrap a line.
+- Worked example — raw PDF text extracted for one real post looked like this (every line break here is just word-wrap, not intentional):
+    "Big screens, cold beers and your favourite people. That's a good game day in
+    our books! 🍻 🏉
+    Whether you're backing your team, catching the latest UFC action or just
+    looking for an excuse to get your mates together, Rogues Sports Bar is the
+    place to be.
+    🍺 Members enjoy 20% off at all Revesby Workers' Club restaurants and bars, or
+    40% off when paying with points.
+    🏉 Check out what's happening at Rogues Sports Bar at rwc.org.au
+    📍 Revesby Workers' Club, 2B Brett St, Revesby."
+  That should become this caption value (shown here with \\n marking the only real line breaks, between the four distinct parts):
+    "Big screens, cold beers and your favourite people. That's a good game day in our books! 🍻🏉 Whether you're backing your team, catching the latest UFC action or just looking for an excuse to get your mates together, Rogues Sports Bar is the place to be.\\n\\n🍺 Members enjoy 20% off at all Revesby Workers' Club restaurants and bars, or 40% off when paying with points.\\n\\n🏉 Check out what's happening at Rogues Sports Bar at rwc.org.au\\n\\n📍 Revesby Workers' Club, 2B Brett St, Revesby."
+
+For dropbox_url, extract the Dropbox link from the slide if one exists (look for "Dropbox Video Link", "Dropbox Link", or any dropbox.com URL on the slide) — if no Dropbox link is present on the slide, use an empty string "". Return only the JSON — no explanation before or after."""
 
 # Explicit SigV4 + virtual-hosted-style addressing. Without this, boto3's default for
 # generate_presigned_url resolves to legacy SigV2 against the bare, regionless
