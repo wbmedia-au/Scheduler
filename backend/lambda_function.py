@@ -126,17 +126,61 @@ def _clean_line(line):
     return re.sub(r" {2,}", " ", line)
 
 
+# Some longstanding symbols that double as emoji — ❤ (U+2764), ☕ (U+2615), ✨ (U+2728),
+# ⚡ (U+26A1) and others predating the dedicated emoji blocks — default to plain
+# black-and-white "text presentation" unless immediately followed by the emoji variation
+# selector U+FE0F. Canva's PDF export (or pypdf's extraction of it) drops that selector,
+# which is exactly why a red heart in Canva came out as a black heart once posted — the
+# character itself (U+2764) survived extraction, but the invisible flag that says "render
+# this in colour" did not. EMOJI_VARIATION_SELECTOR forces colour (emoji) presentation.
+EMOJI_VARIATION_SELECTOR = "️"
+_VARIATION_SELECTORS = {"︎", EMOJI_VARIATION_SELECTOR}  # text-presentation / emoji-presentation selectors
+_ZERO_WIDTH_JOINER = "‍"
+# Characters that must stay immediately after the emoji they attach to — inserting the
+# variation selector before one of these would split an existing modifier/ZWJ sequence
+# (e.g. a skin-tone modifier, or the joiner in a multi-part sequence) instead of fixing it.
+_EMOJI_CONTINUATION_CATEGORIES = {"Mn", "Cf", "Sk"}
+
+
+def _force_emoji_presentation(text):
+    """Appends the emoji variation selector (U+FE0F) after every plain "So"-category
+    symbol that isn't already followed by one, so it renders in full colour instead of
+    the monochrome "text style" some platforms fall back to for characters like ❤ ☕ ✨ ⚡.
+
+    This is safe to apply uniformly, without a hardcoded list of just the "legacy"
+    symbols that actually need it: per the Unicode emoji variation sequence spec
+    (UTS #51), appending U+FE0F to a character that's already emoji-presentation by
+    default (e.g. 🥢, 🍜, which come from the newer emoji blocks) is valid and simply
+    redundant — it doesn't change how they render. Insertion is skipped when the next
+    character is itself a variation selector, ZWJ, or modifier (categories Mn/Cf/Sk),
+    so an already-correct or multi-codepoint sequence (e.g. a skin-tone modifier) is
+    left intact rather than split apart.
+    """
+    chars = list(text)
+    n = len(chars)
+    out = []
+    for i, ch in enumerate(chars):
+        out.append(ch)
+        if unicodedata.category(ch) == "So":
+            nxt = chars[i + 1] if i + 1 < n else None
+            if nxt is None or (nxt not in _VARIATION_SELECTORS and nxt != _ZERO_WIDTH_JOINER
+                                and unicodedata.category(nxt) not in _EMOJI_CONTINUATION_CATEGORIES):
+                out.append(EMOJI_VARIATION_SELECTOR)
+    return "".join(out)
+
+
 def normalize_caption(text):
     """Rejoins soft-wrapped lines from pypdf's PDF text extraction back into natural,
-    flowing prose, and repairs Canva-font letter-spacing artifacts. Deterministic — see
-    the module comment above for why this isn't left to the extraction model alone.
+    flowing prose, repairs Canva-font letter-spacing artifacts, and forces full-colour
+    emoji presentation. Deterministic — see the module comment above for why this isn't
+    left to the extraction model alone.
 
-    Rule: join line N to line N+1 with a single space, UNLESS line N ends with
-    . ! ? or an emoji/pictograph, or line N+1 starts with an emoji/pictograph — those
-    cases keep the line break, since they mark a genuine new sentence or new emoji-led
-    line (the pattern every caption in this app's content calendars follows: a body
-    paragraph, then short emoji-led lines for the offer, the call-to-action, and the
-    location). Blank lines (intentional paragraph breaks already in the source) are
+    Line-rejoining rule: join line N to line N+1 with a single space, UNLESS line N
+    ends with . ! ? or an emoji/pictograph, or line N+1 starts with an emoji/pictograph
+    — those cases keep the line break, since they mark a genuine new sentence or new
+    emoji-led line (the pattern every caption in this app's content calendars follows:
+    a body paragraph, then short emoji-led lines for the offer, the call-to-action, and
+    the location). Blank lines (intentional paragraph breaks already in the source) are
     always preserved as their own line and never joined across.
     """
     if not text:
@@ -163,7 +207,7 @@ def normalize_caption(text):
         else:
             out_lines[-1] = re.sub(r" +", " ", f"{prev} {line}").strip()
 
-    return "\n".join(out_lines)
+    return _force_emoji_presentation("\n".join(out_lines))
 
 
 def _normalize_posts_captions(posts):
